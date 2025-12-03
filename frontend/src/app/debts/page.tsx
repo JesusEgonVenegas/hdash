@@ -32,6 +32,7 @@ export default function DebtsPage() {
         <main className="text-white p-6">
             <h1 className="text-2xl font-bold mb-4">Debt List</h1>
             <DebtTable debts={mockDebts} />
+            <a href="/debts/add">Add New Debt</a>
         </main>
     )
 }
