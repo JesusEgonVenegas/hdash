@@ -1,23 +1,29 @@
 import { Debt } from "@/types/debt";
 import { notFound } from "next/navigation";
 
-const mockDebts: Debt[] = [
-    { id: "1", name: "RappiCard", amount: 28600, interestRate: 90, minPayment: 17763.68, dueDay: 28 },
-    { id: "2", name: "Banamex", amount: 18854.43, interestRate: 61, minPayment: 430, dueDay: 4 },
-    { id: "3", name: "Nu", amount: 1300, interestRate: 69, minPayment: 100, dueDay: 27 },
-];
+async function getDebt(id: string) {
+    const res = await fetch(`http://localhost:5063/api/debts/${id}`, {
+        cache: "no-store",
+    });
 
-const mockHistory = [
-    { id: 1, date: "2025-01-03", amount: 1000 },
-    { id: 2, date: "2025-02-04", amount: 1200 },
-];
+    if (!res.ok) {
+        return null
+    }
+
+    return res.json()
+}
 
 export default async function DebtDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
 
-    const debt = mockDebts.find((d) => d.id === id);
+    const debt = await getDebt(id)
 
-    if (!debt) return notFound();
+    if (!debt) return notFound()
+
+    const mockHistory = [
+        { id: 1, date: "2025-01-03", amount: 1000 },
+        { id: 2, date: "2025-02-04", amount: 1200 },
+    ];
 
     return (
         <main className="text-white p-6 space-y-6">
