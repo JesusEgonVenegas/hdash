@@ -3,6 +3,7 @@
 import { simulateMultipleDebts } from "@/lib/debt/utils";
 import { Debt } from "@/types/debt";
 import { useState } from "react";
+import SimulationResult from "../components/SimulationResult";
 
 export default function DebtSimulationPage() {
     const [monthlyBudget, setMonthlyBudget] = useState("2000");
@@ -30,7 +31,7 @@ export default function DebtSimulationPage() {
                 <label className="block mb-1 font-medium">Monthly Budget</label>
                 <input
                     type="number"
-                    className="text-black p-2"
+                    className="text-black p-2 bg-neutral-200"
                     value={monthlyBudget}
                     onChange={(e) => setMonthlyBudget(e.target.value)}
                 />
@@ -40,7 +41,7 @@ export default function DebtSimulationPage() {
             <div>
                 <label className="block mb-1 font-medium">Strategy</label>
                 <select
-                    className="text-black p-2"
+                    className="text-black p-2 bg-neutral-200"
                     value={strategy}
                     onChange={(e) => setStrategy(e.target.value as any)}
                 >
@@ -59,19 +60,7 @@ export default function DebtSimulationPage() {
 
             {/* Results */}
             {result && (
-                <div className="mt-6 p-4 bg-gra-800 rounded">
-                    <h2 className="text-xl font-semibold mb-2">Results</h2>
-                    <p><strong>Months:</strong> {result.months}</p>
-                    <p><strong>Total Interest Paid:</strong> *TODO: SHOW TOTAL INTEREST PAID*</p>
-
-                    <details className="mt-4">
-                        <summary className="cursor-pointer mb-2">Monthly Breakdown</summary>
-                        <pre className="mt-2 text-xs bg-black/40 p-2 rounded">
-                            {JSON.stringify(result.timeline.slice(0, 12), null, 2)}
-                        </pre>
-                        <p className="text-xs mt-2">(Showin first 12 months only)</p>
-                    </details>
-                </div>
+                <SimulationResult result={result} />
             )}
         </main>
     )
