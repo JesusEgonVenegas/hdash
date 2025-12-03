@@ -1,33 +1,54 @@
 "use client";
 
 import { useState } from "react";
-import { Debt } from "@/types/debt";
+import { useRouter } from "next/navigation";
 
 export default function DebtForm() {
+    const router = useRouter();
+
     const [name, setName] = useState("");
     const [amount, setAmount] = useState("");
     const [interestRate, setInterestRate] = useState("");
     const [minPayment, setMinPayment] = useState("");
     const [dueDay, setDueDay] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
+        setIsSubmitting(true);
 
-        const newDebt: Debt = {
-            id: crypto.randomUUID(),
-            name,
-            amount: parseFloat(amount),
-            interestRate: parseFloat(interestRate),
-            minPayment: parseFloat(minPayment),
-            dueDay: parseInt(dueDay, 10),
+        try {
+            const payload = {
+                name,
+                amount: parseFloat(amount),
+                interestRate: parseFloat(interestRate),
+                minPayment: parseFloat(minPayment),
+                dueDay: parseInt(dueDay, 10),
+            }
+
+            const res = await fetch("http://localhost:5063/api/debts", {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const message = await res.text();
+                throw new Error(message || "Failed to create debt");
+            }
+
+            router.push("/debts")
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message ?? "Something went wrong");
+        } finally {
+            setIsSubmitting(false);
         };
 
-        console.log("New debt created:", newDebt);
-
-        // Later this will POST to backend
-        // await fetch("/api/debts", { method: "POST", body: JSON.stringify(newDebt) });
-
-        alert("Debt added (mock). Check console.");
     };
 
     return (
@@ -93,8 +114,12 @@ export default function DebtForm() {
                 type="submit"
                 className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
             >
-                Add Debt (Mock)
+                {isSubmitting ? "Saving..." : "Add Debt"}
             </button>
+
+            {error && (
+                <p className="mt-2 text-sm text-red-400">{error}</p>
+            )}
         </form>
     );
 }
