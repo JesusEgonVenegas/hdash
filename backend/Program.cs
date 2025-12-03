@@ -1,3 +1,4 @@
+using backend.DTOs;
 using backend.Data;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
@@ -21,14 +22,37 @@ if (app.Environment.IsDevelopment())
 // endpoints
 app.MapGet("/api/debts", async (AppDbContext db) =>
 {
-    return await db.Debts.ToListAsync();
+    var debts = await db.Debts
+        .OrderBy(d => d.CreatedAt)
+        .ToListAsync();
+
+    return Results.Ok(debts);
 });
 
-app.MapPost("/api/debts", async (AppDbContext db, Debt debt) =>
+app.MapPost("/api/debts", async (AppDbContext db, CreateDebtDto dto) =>
 {
-    debt.Id = Guid.NewGuid();
-    debt.CreatedAt = DateTime.UtcNow;
-    debt.UpdatedAt = DateTime.UtcNow;
+    if (dto.Name.Length < 1)
+        return Results.BadRequest("Name is required.");
+
+    if (dto.Amount <= 0)
+        return Results.BadRequest("Amount must be positive.");
+
+    if (dto.MinPayment <= 0)
+        return Results.BadRequest("Minimum payment must be positive.");
+
+    if (dto.DueDay < 1 || dto.DueDay > 31)
+        return Results.BadRequest("DueDay must be between 1 and 31.");
+
+    var debt = new Debt
+    {
+        Name = dto.Name,
+        Amount = dto.Amount,
+        InterestRate = dto.InterestRate,
+        MinPayment = dto.MinPayment,
+        DueDay = dto.DueDay,
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    };
 
     db.Debts.Add(debt);
     await db.SaveChangesAsync();
