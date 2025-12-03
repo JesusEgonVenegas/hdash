@@ -1,8 +1,13 @@
 "use client";
 
 import { Debt } from "@/types/debt";
+import { useRouter } from "next/navigation";
 
 export default function DebtTable({ debts }: { debts: Debt[] }) {
+    const router = useRouter()
+    function handleClick(id: string) {
+        router.push(`debts/${id}`)
+    }
     return (
         <div className="p-4">
             <table className="w-full border border-gray-700 border-collapse">
@@ -18,7 +23,14 @@ export default function DebtTable({ debts }: { debts: Debt[] }) {
 
                 <tbody>
                     {debts.map((d) => (
-                        <tr key={d.id} className="border">
+                        <tr
+                            key={d.id}
+                            className="border hover:bg-blue-950 cursor-pointer"
+                            onClick={() => handleClick(d.id)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === "Enter" && handleClick(d.id)}
+                        >
                             <td className="border px-3 py-2">{d.name}</td>
                             <td className="border px-3 py-2">
                                 ${d.amount.toLocaleString()}
