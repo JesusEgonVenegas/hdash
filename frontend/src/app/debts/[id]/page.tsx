@@ -1,4 +1,5 @@
 import { Debt } from "@/types/debt";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 async function getDebt(id: string) {
@@ -47,6 +48,13 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
                     ))}
                 </ul>
             </section>
+
+            <Link
+                href={`/debts/${id}/edit`}
+                className="inline-block bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+            >
+                Edit Debt
+            </Link>
         </main>
     );
 }
