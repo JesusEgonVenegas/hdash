@@ -307,4 +307,19 @@ app.MapGet(
     }
 );
 
+app.MapGet(
+    "/api/payments",
+    async (AppDbContext db, int? limit) =>
+    {
+        var query = db.Payments.OrderByDescending(p => p.PaidAt).AsQueryable();
+
+        if (limit.HasValue)
+            query = query.Take(limit.Value);
+
+        var payments = await query.ToListAsync();
+
+        return Results.Ok(payments);
+    }
+);
+
 app.Run();
