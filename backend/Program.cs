@@ -77,5 +77,49 @@ app.MapPost(
     }
 );
 
+app.MapGet(
+    "/api/debts/{id}",
+    async (AppDbContext db, Guid id) =>
+    {
+        var debt = await db.Debts.FindAsync(id);
+
+        return debt is not null ? Results.Ok(debt) : Results.NotFound();
+    }
+);
+
+app.MapPut(
+    "/api/debts/{id}",
+    async (AppDbContext db, Guid id, UpdateDebtDto dto) =>
+    {
+        var debt = await db.Debts.FindAsync(id);
+
+        if (debt is null)
+            return Results.NotFound();
+
+        if (dto.Name.Length < 1)
+            return Results.BadRequest("Name is required.");
+
+        if (dto.Amount <= 0)
+            return Results.BadRequest("Amount must be positive.");
+
+        if (dto.MinPayment <= 0)
+            return Results.BadRequest("Minimum payment must be positive.");
+
+        if (dto.DueDay < 1 || dto.DueDay > 31)
+            return Results.BadRequest("Dueday must be between 1 and 31.");
+
+        debt.Name = dto.Name;
+        debt.Amount = dto.Amount;
+        debt.InterestRate = dto.InterestRate;
+        debt.MinPayment = dto.MinPayment;
+        debt.DueDay = dto.DueDay;
+        debt.UpdatedAt = DateTime.UtcNow;
+
+        await db.SaveChangesAsync();
+
+        return Results.Ok(debt);
+    }
+);
+
 app.UseCors();
 app.Run();
