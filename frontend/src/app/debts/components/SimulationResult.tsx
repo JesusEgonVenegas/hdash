@@ -23,6 +23,7 @@ export default function SimulationResult({ result }: { result: SimResult }) {
 
     const maxTotal = totals[0].total;
 
+
     return (
         <div className="mt-6 p-4 bg-gray-800 rounded space-y-4">
             <h2 className="text-xl font-semibold">Payoff Timeline</h2>
@@ -32,25 +33,36 @@ export default function SimulationResult({ result }: { result: SimResult }) {
 
             <div className="space-y-2">
                 {totals.slice(0, 24).map((entry) => {
-                    const percentage =
-                        maxTotal === 0 ? 0 : (entry.total / maxTotal) * 100;
+                    const raw = (entry.total / maxTotal) * 100;
+                    const percent = maxTotal === 0 ? 0 : Math.min(raw, 100);
+                    const isNotProgressing = raw > 100;
 
                     return (
-                        <div
-                            key={entry.month}
-                            className="flex items-center gap-2 text-xs"
-                        >
+                        <div key={entry.month} className="flex items-center gap-2 text-xs">
+                            {/* Month */}
                             <span className="w-10">M{entry.month}</span>
-                            <div className="flex-1 bg-gray-700 h-3 rounded">
+
+                            {/* Bar */}
+                            <div className="flex-1 bg-gray-700 h-3 rounded relative">
                                 <div
-                                    className="h-3 rounded bg-blue-500"
-                                    style={{ width: `${percentage}%` }}
+                                    className={`h-3 rounded ${isNotProgressing ? "bg-red-600" : "bg-blue-500"}`}
+                                    style={{ width: `${percent}%` }}
                                 />
                             </div>
-                            <span className="w-28 text-right">
+
+                            {/* Amount */}
+                            <span className="w-24 text-right">
                                 ${entry.total.toFixed(0)}
                             </span>
+
+                            {/* Warning */}
+                            {isNotProgressing && (
+                                <span className="text-red-400 text-[10px] whitespace-nowrap">
+                                    ⚠ not improving
+                                </span>
+                            )}
                         </div>
+
                     )
                 })}
             </div>

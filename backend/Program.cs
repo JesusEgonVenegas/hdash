@@ -172,7 +172,15 @@ app.MapPost(
 
         await db.SaveChangesAsync();
 
-        return Results.Ok(payment);
+        return Results.Ok(
+            new
+            {
+                id = payment.Id,
+                amount = payment.Amount,
+                paidAt = payment.PaidAt,
+                debtId = payment.DebtId,
+            }
+        );
     }
 );
 
@@ -258,7 +266,44 @@ app.MapPut(
 
         await db.SaveChangesAsync();
 
-        return Results.Ok(payment);
+        return Results.Ok(
+            new
+            {
+                id = payment.Id,
+                amount = payment.Amount,
+                paidAt = payment.PaidAt,
+                debtId = payment.DebtId,
+            }
+        );
+    }
+);
+
+app.MapGet(
+    "/api/simulation",
+    async (AppDbContext db) =>
+    {
+        var debts = await db.Debts.Include(d => d.Payments).OrderBy(d => d.CreatedAt).ToListAsync();
+
+        var result = debts.Select(d => new
+        {
+            id = d.Id,
+            name = d.Name,
+            amount = d.Amount,
+            interestRate = d.InterestRate,
+            minPayment = d.MinPayment,
+            dueDay = d.DueDay,
+            payments = d
+                .Payments.OrderBy(p => p.PaidAt)
+                .Select(p => new
+                {
+                    id = p.Id,
+                    amount = p.Amount,
+                    paidAt = p.PaidAt,
+                })
+                .ToList(),
+        });
+
+        return Results.Ok(result);
     }
 );
 

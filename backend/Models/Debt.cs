@@ -17,4 +17,6 @@ public class Debt
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<Payment> Payments { get; set; } = new();
 }
