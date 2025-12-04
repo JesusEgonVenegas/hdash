@@ -150,6 +150,11 @@ app.MapPost(
         if (dto.Amount <= 0)
             return Results.BadRequest("Amount must be positive.");
 
+        if (dto.Amount > debt.Amount)
+        {
+            return Results.BadRequest("Payment cannot be greater than current balance.");
+        }
+
         var payment = new Payment
         {
             Amount = dto.Amount,
@@ -158,6 +163,13 @@ app.MapPost(
         };
 
         db.Payments.Add(payment);
+
+        debt.Amount -= dto.Amount;
+        if (debt.Amount < 0)
+            debt.Amount = 0; // safety clamp
+
+        debt.UpdatedAt = DateTime.UtcNow;
+
         await db.SaveChangesAsync();
 
         return Results.Ok(payment);
@@ -200,6 +212,13 @@ app.MapDelete(
         if (payment is null)
             return Results.NotFound();
 
+        var debt = await db.Debts.FindAsync(payment.DebtId);
+        if (debt is not null)
+        {
+            debt.Amount += payment.Amount;
+            debt.UpdatedAt = DateTime.UtcNow;
+        }
+
         db.Payments.Remove(payment);
         await db.SaveChangesAsync();
 
@@ -217,6 +236,22 @@ app.MapPut(
 
         if (dto.Amount <= 0)
             return Results.BadRequest("Amount must be positive.");
+
+        var debt = await db.Debts.FindAsync(payment.DebtId);
+
+        if (debt is not null)
+        {
+            var oldAmount = payment.Amount;
+            var newAmount = dto.Amount;
+            var delta = newAmount - oldAmount;
+
+            debt.Amount -= delta;
+
+            if (debt.Amount < 0)
+                debt.Amount = 0;
+
+            debt.UpdatedAt = DateTime.UtcNow;
+        }
 
         payment.Amount = dto.Amount;
         payment.PaidAt = dto.PaidAt;
