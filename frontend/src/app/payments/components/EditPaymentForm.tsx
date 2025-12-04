@@ -45,7 +45,7 @@ export default function EditPaymentForm({ payment }: { payment: any }) {
                 <label className="block">Amount</label>
                 <input
                     type="number"
-                    className="p-2 text-black w-full"
+                    className="p-2 text-white bg-neutral-800 w-full"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                 />
@@ -55,7 +55,7 @@ export default function EditPaymentForm({ payment }: { payment: any }) {
                 <label className="block">Date</label>
                 <input
                     type="date"
-                    className="p-2 text-black w-full"
+                    className="p-2 text-white bg-neutral-800 w-full"
                     value={paidAt}
                     onChange={(e) => setPaidAt(e.target.value)}
                 />
