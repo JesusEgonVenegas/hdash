@@ -19,7 +19,7 @@ builder.Services.AddCors(options =>
         name: policyName,
         policy =>
         {
-            policy.WithOrigins("http//localhost:3000").AllowAnyHeader().AllowAnyMethod();
+            policy.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod();
         }
     );
 });
@@ -31,6 +31,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseCors(policyName);
 
 // endpoints
 app.MapGet(
@@ -137,5 +139,92 @@ app.MapDelete(
     }
 );
 
-app.UseCors();
+app.MapPost(
+    "/api/debts/{debtId}/payments",
+    async (AppDbContext db, Guid debtId, CreatePaymentDto dto) =>
+    {
+        var debt = await db.Debts.FindAsync(debtId);
+        if (debt is null)
+            return Results.NotFound("Debt not found.");
+
+        if (dto.Amount <= 0)
+            return Results.BadRequest("Amount must be positive.");
+
+        var payment = new Payment
+        {
+            Amount = dto.Amount,
+            PaidAt = dto.PaidAt,
+            DebtId = debtId,
+        };
+
+        db.Payments.Add(payment);
+        await db.SaveChangesAsync();
+
+        return Results.Ok(payment);
+    }
+);
+
+app.MapGet(
+    "/api/debts/{debtId}/payments",
+    async (AppDbContext db, Guid debtId) =>
+    {
+        var debtExists = await db.Debts.AnyAsync(d => d.Id == debtId);
+        if (!debtExists)
+            return Results.NotFound("Debt not found.");
+
+        var payments = await db
+            .Payments.Where(p => p.DebtId == debtId)
+            .OrderByDescending(p => p.PaidAt)
+            .ToListAsync();
+
+        return Results.Ok(payments);
+    }
+);
+
+app.MapGet(
+    "/api/payments/{paymentId}",
+    async (AppDbContext db, Guid paymentId) =>
+    {
+        Console.WriteLine(paymentId);
+        var payment = await db.Payments.FindAsync(paymentId);
+
+        return payment is not null ? Results.Ok(payment) : Results.NotFound();
+    }
+);
+
+app.MapDelete(
+    "/api/payments/{id}",
+    async (AppDbContext db, Guid id) =>
+    {
+        var payment = await db.Payments.FindAsync(id);
+        if (payment is null)
+            return Results.NotFound();
+
+        db.Payments.Remove(payment);
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+);
+
+app.MapPut(
+    "/api/payments/{id}",
+    async (AppDbContext db, Guid id, UpdatePaymentDto dto) =>
+    {
+        var payment = await db.Payments.FindAsync(id);
+        if (payment is null)
+            return Results.NotFound();
+
+        if (dto.Amount <= 0)
+            return Results.BadRequest("Amount must be positive.");
+
+        payment.Amount = dto.Amount;
+        payment.PaidAt = dto.PaidAt;
+
+        await db.SaveChangesAsync();
+
+        return Results.Ok(payment);
+    }
+);
+
 app.Run();
