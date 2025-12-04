@@ -24,3 +24,66 @@ body {
     color: var(--foreground);
     font-family: Arial, Helvetica, sans-serif;
 }
+
+/* === HDash ASCII UI System === */
+
+:root {
+    --panel-bg: #111;
+    --border: #444;
+    --text-light: #e5e5e5;
+    --accent: #7db0ff;
+    --danger: #ff6f6f;
+}
+
+/* Use your existing geist mono automatically */
+body {
+    font-family: var(--font-mono), monospace;
+}
+
+/* Panels */
+.ascii-panel {
+    @apply bg-(--panel-bg) border border-(--border) p-4 rounded-none text-(--text-light);
+}
+
+/* Tables */
+.ascii-table {
+    @apply w-full border-2 border-(--border) border-collapse text-(--text-light);
+}
+
+.ascii-table th,
+.ascii-table td {
+    @apply border border-(--border) px-3 py-2;
+}
+
+/* Headings */
+.ascii-heading {
+    @apply text-xl font-bold mb-2 text-(--accent);
+}
+
+.ascii-sub {
+    @apply text-sm text-gray-400;
+}
+
+.ascii-panel {
+    border: 1px solid var(--color-foreground);
+    padding: 16px;
+    border-radius: 8px;
+    background: var(--color-background);
+}
+
+.ascii-heading {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.ascii-table-header,
+.ascii-table-row {
+    display: flex;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--color-foreground);
+}
+
+.ascii-table-header {
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.06);
+}
