@@ -1,6 +1,7 @@
 import { Debt } from "@/types/debt";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DeleteDebtButton from "../components/DeleteDebtButton";
 
 async function getDebt(id: string) {
     const res = await fetch(`http://localhost:5063/api/debts/${id}`, {
@@ -49,12 +50,16 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
                 </ul>
             </section>
 
-            <Link
-                href={`/debts/${id}/edit`}
-                className="inline-block bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
-            >
-                Edit Debt
-            </Link>
+            <div className="flex items-center gap-4">
+                <Link
+                    href={`/debts/${id}/edit`}
+                    className="inline-block bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+                >
+                    Edit Debt
+                </Link>
+
+                <DeleteDebtButton id={id} />
+            </div>
         </main>
     );
 }

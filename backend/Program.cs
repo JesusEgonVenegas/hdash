@@ -121,5 +121,21 @@ app.MapPut(
     }
 );
 
+app.MapDelete(
+    "/api/debts/{id}",
+    async (AppDbContext db, Guid id) =>
+    {
+        var debt = await db.Debts.FindAsync(id);
+
+        if (debt is null)
+            return Results.NotFound();
+
+        db.Debts.Remove(debt);
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+);
+
 app.UseCors();
 app.Run();
