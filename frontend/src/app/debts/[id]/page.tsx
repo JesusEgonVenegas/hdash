@@ -57,6 +57,12 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
                             </div>
 
                             <DeletePaymentButton id={p.id} />
+                            <Link
+                                href={`/payments/${p.id}/edit`}
+                                className="text-blue-400 hover:text-blue-500 ml-4"
+                            >
+                                Edit
+                            </Link>
                         </li>
                     ))}
                 </ul>

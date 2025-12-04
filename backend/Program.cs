@@ -19,7 +19,7 @@ builder.Services.AddCors(options =>
         name: policyName,
         policy =>
         {
-            policy.WithOrigins("http//localhost:3000").AllowAnyHeader().AllowAnyMethod();
+            policy.WithOrigins("http://localhost:3000").AllowAnyHeader().AllowAnyMethod();
         }
     );
 });
@@ -31,6 +31,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseCors(policyName);
 
 // endpoints
 app.MapGet(
@@ -179,6 +181,17 @@ app.MapGet(
     }
 );
 
+app.MapGet(
+    "/api/payments/{paymentId}",
+    async (AppDbContext db, Guid paymentId) =>
+    {
+        Console.WriteLine(paymentId);
+        var payment = await db.Payments.FindAsync(paymentId);
+
+        return payment is not null ? Results.Ok(payment) : Results.NotFound();
+    }
+);
+
 app.MapDelete(
     "/api/payments/{id}",
     async (AppDbContext db, Guid id) =>
@@ -194,5 +207,24 @@ app.MapDelete(
     }
 );
 
-app.UseCors();
+app.MapPut(
+    "/api/payments/{id}",
+    async (AppDbContext db, Guid id, UpdatePaymentDto dto) =>
+    {
+        var payment = await db.Payments.FindAsync(id);
+        if (payment is null)
+            return Results.NotFound();
+
+        if (dto.Amount <= 0)
+            return Results.BadRequest("Amount must be positive.");
+
+        payment.Amount = dto.Amount;
+        payment.PaidAt = dto.PaidAt;
+
+        await db.SaveChangesAsync();
+
+        return Results.Ok(payment);
+    }
+);
+
 app.Run();
