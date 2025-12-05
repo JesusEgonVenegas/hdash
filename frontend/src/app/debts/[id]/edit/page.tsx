@@ -18,9 +18,9 @@ export default async function EditDebtPage({ params }: { params: Promise<{ id: s
     if (!debt) return notFound();
 
     return (
-        <main className="p-6 text-white">
+        <section className="p-6 text-white">
             <h1 className="text-2xl font-bold mb-4">Edit Debt</h1>
             <EditDebtForm debt={debt} />
-        </main>
+        </section>
     );
 }

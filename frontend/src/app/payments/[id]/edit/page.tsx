@@ -17,10 +17,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     if (!payment) return notFound();
 
     return (
-        <main className="p-6 text-white">
+        <section className="p-6 text-white">
             <h1 className="text-xl font-bold mb-4">Edit Payment</h1>
             <EditPaymentForm payment={payment} />
-        </main>
+        </section>
     );
 }
 

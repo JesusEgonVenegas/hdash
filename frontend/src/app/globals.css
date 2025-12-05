@@ -87,3 +87,80 @@ body {
     font-weight: bold;
     background: rgba(255, 255, 255, 0.06);
 }
+
+.ascii-active {
+    color: #4ade80;
+    /* green-400 */
+    text-decoration: underline;
+}
+
+/* ============================
+   ASCII INPUT FIELD
+   ============================ */
+.ascii-input-wrapper {
+    display: inline-block;
+    padding: 0 0.35rem;
+    background: #111;
+    border: 1px solid #555;
+    color: #eee;
+}
+
+.ascii-input {
+    @apply font-mono text-sm bg-transparent text-white outline-none;
+    border: none;
+    padding: 0.15rem 0;
+    width: 6rem;
+    /* Adjust depending on desired width */
+}
+
+/* ============================
+   ASCII SELECT FIELD
+   ============================ */
+.ascii-select {
+    @apply font-mono text-sm bg-transparent text-white outline-none;
+    border: none;
+    padding: 0.15rem 0;
+    appearance: none;
+    /* removes browser styles */
+}
+
+/* ============================
+   ASCII BUTTON
+   ============================ */
+/* .ascii-button { */
+/*     @apply font-mono text-sm cursor-pointer; */
+/*     padding: 0.25rem 0.75rem; */
+/*     background: #111; */
+/*     border: 1px solid #555; */
+/*     color: #eee; */
+/* } */
+
+.ascii-button:hover {
+    background: #181818;
+    border-color: #777;
+}
+
+.ascii-button {
+    @apply font-mono text-sm cursor-pointer;
+    border: 1px solid #666;
+    background: transparent;
+    padding: 0px 8px;
+    font-family: monospace;
+}
+
+.ascii-button:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Hide number input arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    /* Firefox */
+}

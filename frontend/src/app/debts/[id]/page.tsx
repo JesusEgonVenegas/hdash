@@ -33,7 +33,7 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
     const payments = await getPayments(id);
 
     return (
-        <main className="text-white p-6 space-y-6">
+        <section className="text-white p-6 space-y-6">
             <h1 className="text-2xl font-bold">{debt.name}</h1>
 
             <div className="bg-gray-800 p-4 rounded space-y-2">
@@ -78,7 +78,7 @@ export default async function DebtDetailPage({ params }: { params: Promise<{ id:
 
                 <DeleteDebtButton id={id} />
             </div>
-        </main>
+        </section>
     );
 }
 

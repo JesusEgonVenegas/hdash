@@ -1,77 +1,67 @@
-"use client";
+import React from "react";
 
-import { Debt } from "@/types/debt";
+function AsciiBar({ percent, danger }: { percent: number; danger: boolean }) {
+    const total = 20;
+    const filled = Math.round((percent / 100) * total);
+    const empty = total - filled;
 
-type SimResult = {
-    months: number;
-    timeline: {
-        month: number;
-        debts: { id: string; name: string; amount: number }[];
-    }[];
-};
+    return (
+        <span
+            className={`font-mono text-xs ${danger ? "text-red-400" : "text-blue-300"
+                }`}
+        >
+            {"█".repeat(filled)}
+            {"░".repeat(empty)}
+        </span>
+    );
+}
 
-export default function SimulationResult({ result }: { result: SimResult }) {
-    if (!result) return null;
+export default function SimulationResult({ result }: { result: any }) {
+    const totals = result?.monthlyTotals || [];
 
-    // total remaining per month
-    const totals = result.timeline.map((entry) => {
-        const total = entry.debts.reduce((sum, d) => sum + d.amount, 0)
-        return { month: entry.month, total }
-    })
-
-    if (totals.length === 0) return null
+    if (totals.length === 0) {
+        return <p className="text-neutral-400 font-mono">No simulation data.</p>;
+    }
 
     const maxTotal = totals[0].total;
 
-
     return (
-        <div className="mt-6 p-4 bg-gray-800 rounded space-y-4">
+        <div className="ascii-panel p-4 space-y-4 font-mono">
             <h2 className="text-xl font-semibold">Payoff Timeline</h2>
-            <p className="text-sm text-gray-300">
-                Showing total remaining debt each month. Bar length = remaining % of starting total.
+            <p className="text-sm text-neutral-400">
+                Remaining debt each month (ASCII bars)
             </p>
 
-            <div className="space-y-2">
-                {totals.slice(0, 24).map((entry) => {
+            <div className="space-y-1">
+                {totals.slice(0, 24).map((entry: any) => {
                     const raw = (entry.total / maxTotal) * 100;
-                    const percent = maxTotal === 0 ? 0 : Math.min(raw, 100);
-                    const isNotProgressing = raw > 100;
+                    const percent = Math.min(raw, 100);
+                    const danger = raw > 100;
 
                     return (
-                        <div key={entry.month} className="flex items-center gap-2 text-xs">
-                            {/* Month */}
+                        <div key={entry.month} className="flex items-center gap-3 text-xs">
                             <span className="w-10">M{entry.month}</span>
 
-                            {/* Bar */}
-                            <div className="flex-1 bg-gray-700 h-3 rounded relative">
-                                <div
-                                    className={`h-3 rounded ${isNotProgressing ? "bg-red-600" : "bg-blue-500"}`}
-                                    style={{ width: `${percent}%` }}
-                                />
-                            </div>
+                            <AsciiBar percent={percent} danger={danger} />
 
-                            {/* Amount */}
-                            <span className="w-24 text-right">
+                            <span className="w-24 text-right text-neutral-300">
                                 ${entry.total.toFixed(0)}
                             </span>
 
-                            {/* Warning */}
-                            {isNotProgressing && (
-                                <span className="text-red-400 text-[10px] whitespace-nowrap">
-                                    ⚠ not improving
-                                </span>
+                            {danger && (
+                                <span className="text-red-400">not progressing</span>
                             )}
                         </div>
-
-                    )
+                    );
                 })}
             </div>
 
             {totals.length > 24 && (
-                <p className="text-xs text-gray-400 mt-2">
-                    (Showing first 24 months only)
+                <p className="text-xs text-neutral-500 mt-2">
+                    … showing only the first 24 months
                 </p>
             )}
         </div>
-    )
+    );
 }
+

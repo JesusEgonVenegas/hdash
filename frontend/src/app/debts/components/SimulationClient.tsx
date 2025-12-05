@@ -12,61 +12,67 @@ export default function SimulationClient({ debts }: { debts: Debt[] }) {
 
     const totalDebt = debts.reduce((sum, d) => sum + d.amount, 0);
 
-    const handleRun = () => {
+    function handleRun() {
         const budget = parseFloat(monthlyBudget);
         const sim = simulateMultipleDebts(debts, budget, strategy);
-        setResult(sim)
-    };
+        console.log(sim)
+        setResult(sim);
+    }
 
     return (
-        <section className="text-white p-6 space-y-6">
+        <section className="space-y-6 font-mono">
 
             {/* Total Debt Summary */}
-            <div className="bg-neutral-900 p-4 rounded border border-neutral-700">
-                <p className="text-lg font-semibold">
-                    Total Debt:
-                    <span className="text-blue-400 ml-2">
-                        ${totalDebt.toLocaleString()}
-                    </span>
+            <div className="ascii-panel p-4 space-y-1">
+                <p className="text-neutral-300 text-sm">total debt</p>
+                <p className="text-2xl font-bold text-blue-400">
+                    ${totalDebt.toLocaleString()}
                 </p>
             </div>
 
-            {/* Monthly Budget Input */}
-            <div>
-                <label className="block mb-1 font-medium">Monthly Budget</label>
-                <input
-                    type="number"
-                    className="text-black p-2 bg-neutral-200"
-                    value={monthlyBudget}
-                    onChange={(e) => setMonthlyBudget(e.target.value)}
-                />
-            </div>
+            {/* Inputs */}
+            <div className="ascii-panel p-4 space-y-4">
 
-            {/* Strategy Selector */}
-            <div>
-                <label className="block mb-1 font-medium">Strategy</label>
-                <select
-                    className="text-black p-2 bg-neutral-200"
-                    value={strategy}
-                    onChange={(e) => setStrategy(e.target.value as any)}
+                {/* Budget Input */}
+                <div className="flex flex-col">
+                    <label className="text-sm text-neutral-300 mb-1">
+                        monthly budget
+                    </label>
+                    <input
+                        type="number"
+                        value={monthlyBudget}
+                        onChange={(e) => setMonthlyBudget(e.target.value)}
+                        className="bg-transparent border border-neutral-600 px-2 py-1 text-white focus:outline-none"
+                    />
+                </div>
+
+                {/* Strategy Input */}
+                <div className="flex flex-col">
+                    <label className="text-sm text-neutral-300 mb-1">
+                        payoff strategy
+                    </label>
+                    <select
+                        value={strategy}
+                        onChange={(e) => setStrategy(e.target.value as any)}
+                        className="bg-transparent border border-neutral-600 px-2 py-1 text-white focus:outline-none"
+                    >
+                        <option value="avalanche">avalanche (highest APR first)</option>
+                        <option value="snowball">snowball (lowest balance first)</option>
+                    </select>
+                </div>
+
+                {/* Run Simulation */}
+                <button
+                    onClick={handleRun}
+                    className="ascii-button mt-2 hover:text-blue-300"
                 >
-                    <option value="avalanche">Avalanche (highest APR first)</option>
-                    <option value="snowball">Snowball (lowest balance first)</option>
-                </select>
+                    run simulation
+                </button>
             </div>
-
-            {/* Run Simulation */}
-            <button
-                className="bg-blue-600 px-4 py-2 rounded"
-                onClick={handleRun}
-            >
-                Run Simulation
-            </button>
 
             {/* Results */}
-            {result && (
-                <SimulationResult result={result} />
-            )}
+            {result && <SimulationResult result={result} />}
         </section>
-    )
+    );
 }
+

@@ -14,10 +14,10 @@ export default async function DashboardPage() {
     const data = await getDashboardData();
 
     return (
-        <main className="p-8 text-white space-y-8">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+        <section className="text-white space-y-8">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
             <DashboardClient data={data} />
-        </main>
+        </section>
     );
 }
 

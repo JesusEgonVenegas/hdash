@@ -111,9 +111,15 @@ export function simulateMultipleDebts(
         })
     }
 
+    const monthlyTotals = timeline.map(entry => ({
+        month: entry.month,
+        total: entry.debts.reduce((sum: number, d: Debt) => sum + d.amount, 0)
+    }));
+
     return {
         months: month,
-        timeline
+        timeline,
+        monthlyTotals
     };
 }
 
