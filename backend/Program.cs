@@ -311,12 +311,20 @@ app.MapGet(
     "/api/payments",
     async (AppDbContext db, int? limit) =>
     {
-        var query = db.Payments.OrderByDescending(p => p.PaidAt).AsQueryable();
+        var query = db.Payments.Include(p => p.Debt).OrderByDescending(p => p.PaidAt).AsQueryable();
 
         if (limit.HasValue)
             query = query.Take(limit.Value);
 
-        var payments = await query.ToListAsync();
+        var payments = await query
+            .Select(p => new
+            {
+                p.Id,
+                p.Amount,
+                p.PaidAt,
+                Debt = new { p.Debt.Id, p.Debt.Name },
+            })
+            .ToListAsync();
 
         return Results.Ok(payments);
     }
