@@ -1,7 +1,7 @@
 export type Debt = {
     id: string;
     name: string;
-    amount: number;
+    startingAmount: number;
     interestRate: number;
     minPayment: number;
     dueDay: number;

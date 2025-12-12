@@ -1,13 +1,19 @@
 "use client";
 
+import { Debt } from "@/types/debt";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function EditPaymentForm({ payment }: { payment: any }) {
+export default function EditPaymentForm({ payment, debts }: { payment: any, debts: Debt[] }) {
     const router = useRouter();
 
     const [amount, setAmount] = useState(String(payment.amount));
-    const [paidAt, setPaidAt] = useState(payment.paidAt.slice(0, 10)); // YYYY-MM-DD
+
+    const initialDate = payment.paidAt.slice(0, 10); // YYYY-MM-DD
+    const [paidAt, setPaidAt] = useState(initialDate);
+
+    const [selectedDebtId, setSelectedDebtId] = useState(payment.debtId)
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -23,15 +29,16 @@ export default function EditPaymentForm({ payment }: { payment: any }) {
                 body: JSON.stringify({
                     amount: parseFloat(amount),
                     paidAt: new Date(paidAt).toISOString(),
+                    debtId: selectedDebtId
                 }),
             });
 
             if (!res.ok) {
                 const msg = await res.text();
-                throw new Error(msg);
+                throw new Error(msg || "Failed to update payment");
             }
 
-            router.push(`/debts/${payment.debtId}`);
+            router.push("/payments");
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -39,37 +46,88 @@ export default function EditPaymentForm({ payment }: { payment: any }) {
         }
     }
 
+    async function handleDelete() {
+        if (!confirm("Delete this payment?")) return
+
+        try {
+            setLoading(true)
+            const res = await fetch(`http://localhost:5063/api/payments/${payment.id}`, {
+                method: "DELETE"
+            });
+            if (!res.ok) {
+                const msg = await res.text();
+                throw new Error(msg || "Failed to delete payment")
+            }
+
+            router.push("/payments")
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 bg-neutral-900 p-4 rounded">
-            <div>
-                <label className="block">Amount</label>
+        <form onSubmit={handleSubmit} className="space-y-4 ascii-panel p-4 font-mono">
+
+            {error && <p className="text-red-400">{error}</p>}
+
+            {/* Amount */}
+            <div className="flex flex-col">
+                <label className="text-sm text-neutral-300 mb-1">amount</label>
                 <input
                     type="number"
-                    className="p-2 text-white bg-neutral-800 w-full"
+                    className="bg-neutral-900 text-white border border-neutral-600 px-2 py-1 focus:outline-none"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                 />
             </div>
 
-            <div>
-                <label className="block">Date</label>
+            {/* Date */}
+            <div className="flex flex-col">
+                <label className="text-sm text-neutral-300 mb-1">date</label>
                 <input
                     type="date"
-                    className="p-2 text-white bg-neutral-800 w-full"
+                    className="bg-neutral-900 text-white border border-neutral-600 px-2 py-1 focus:outline-none"
                     value={paidAt}
                     onChange={(e) => setPaidAt(e.target.value)}
                 />
             </div>
 
-            {error && <p className="text-red-400">{error}</p>}
+            {/* Debt selector */}
+            <div className="flex flex-col">
+                <label className="text-sm text-neutral-300 mb-1">debt</label>
+                <select
+                    value={selectedDebtId}
+                    className="bg-neutral-900 text-white border border-neutral-600 px-2 py-1 focus:outline-none"
+                    onChange={(e) => setSelectedDebtId(e.target.value)}
+                >
+                    {debts.map((debt) => (
+                        <option key={debt.id} value={debt.id} className="text-black">
+                            {debt.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
 
+            {/* Save */}
             <button
                 disabled={loading}
-                className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="ascii-button mt-2 hover:text-blue-300 disabled:opacity-50"
             >
-                {loading ? "Saving..." : "Save Changes"}
+                {loading ? "saving..." : "save changes"}
             </button>
+
+            {/* Delete */}
+            <button
+                type="button"
+                disabled={loading}
+                onClick={handleDelete}
+                className="ascii-button mt-2 hover:text-red-400 text-red-300 border-red-500 disabled:opacity-50"
+            >
+                delete payment
+            </button>
+
         </form>
     );
 }
-

@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { Debt } from "@/types/debt";
 
 type Mode = "normal" | "insert";
-type ColumnKey = "name" | "amount" | "interestRate" | "minPayment" | "dueDay";
+type ColumnKey = "name" | "startingAmount" | "interestRate" | "minPayment" | "dueDay";
 
 const COLUMNS: { key: ColumnKey; label: string; widthClass: string }[] = [
     { key: "name", label: "name", widthClass: "w-40" },
-    { key: "amount", label: "amount", widthClass: "w-28" },
+    { key: "startingAmount", label: "amount", widthClass: "w-28" },
     { key: "interestRate", label: "apr", widthClass: "w-20" },
     { key: "minPayment", label: "min_payment", widthClass: "w-28" },
     { key: "dueDay", label: "due_day", widthClass: "w-20" },
@@ -172,8 +172,8 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
             case "name":
                 updated.name = editingValue;
                 break;
-            case "amount":
-                updated.amount = parseFloat(editingValue) || 0;
+            case "startingAmount":
+                updated.startingAmount = parseFloat(editingValue) || 0;
                 break;
             case "interestRate":
                 updated.interestRate = parseFloat(editingValue) || 0;
@@ -188,7 +188,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
 
         const payload = {
             name: updated.name ?? oldDebt.name,
-            amount: updated.amount ?? oldDebt.amount,
+            startingAmount: updated.startingAmount ?? oldDebt.startingAmount,
             interestRate: updated.interestRate ?? oldDebt.interestRate,
             minPayment: updated.minPayment ?? oldDebt.minPayment,
             dueDay: updated.dueDay ?? oldDebt.dueDay,
@@ -231,13 +231,13 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
 
         const payload = {
             name: newDebtName.trim(),
-            amount: parseFloat(newAmount) || 0,
+            startingAmount: parseFloat(newAmount) || 0,
             interestRate: parseFloat(newApr) || 0,
             minPayment: parseFloat(newMinPayment) || 0,
             dueDay: parseInt(newDueDay, 10) || 1,
         };
 
-        if (!payload.name || payload.amount <= 0) {
+        if (!payload.name || payload.startingAmount <= 0) {
             console.warn("Name and positive amount required");
             return;
         }
@@ -343,7 +343,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
         const raw = (debt as any)[col.key];
 
         let display = raw;
-        if (col.key === "amount" || col.key === "minPayment") {
+        if (col.key === "startingAmount" || col.key === "minPayment") {
             display = `$${Number(raw).toLocaleString()}`;
         } else if (col.key === "interestRate") {
             display = `${raw}%`;
