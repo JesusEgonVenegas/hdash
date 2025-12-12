@@ -4,7 +4,7 @@ public class UpdateDebtDto
 {
     public string Name { get; set; } = string.Empty;
 
-    public decimal Amount { get; set; }
+    public decimal StartingAmount { get; set; }
 
     public decimal InterestRate { get; set; }
 

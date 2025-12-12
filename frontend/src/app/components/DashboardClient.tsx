@@ -19,7 +19,7 @@ export default function DashboardClient({
     const payments = data.payments;
 
     // total remaining debt
-    const totalDebt = debts.reduce((sum, d) => sum + d.amount, 0);
+    const totalDebt = debts.reduce((sum, d) => sum + d.startingAmount, 0);
 
     // last 30 days
     const now = Date.now();

@@ -52,7 +52,7 @@ app.MapPost(
         if (dto.Name.Length < 1)
             return Results.BadRequest("Name is required.");
 
-        if (dto.Amount <= 0)
+        if (dto.StartingAmount <= 0)
             return Results.BadRequest("Amount must be positive.");
 
         if (dto.MinPayment <= 0)
@@ -64,7 +64,7 @@ app.MapPost(
         var debt = new Debt
         {
             Name = dto.Name,
-            Amount = dto.Amount,
+            StartingAmount = dto.StartingAmount,
             InterestRate = dto.InterestRate,
             MinPayment = dto.MinPayment,
             DueDay = dto.DueDay,
@@ -101,7 +101,7 @@ app.MapPut(
         if (dto.Name.Length < 1)
             return Results.BadRequest("Name is required.");
 
-        if (dto.Amount <= 0)
+        if (dto.StartingAmount <= 0)
             return Results.BadRequest("Amount must be positive.");
 
         if (dto.MinPayment <= 0)
@@ -111,7 +111,7 @@ app.MapPut(
             return Results.BadRequest("Dueday must be between 1 and 31.");
 
         debt.Name = dto.Name;
-        debt.Amount = dto.Amount;
+        debt.StartingAmount = dto.StartingAmount;
         debt.InterestRate = dto.InterestRate;
         debt.MinPayment = dto.MinPayment;
         debt.DueDay = dto.DueDay;
@@ -150,11 +150,6 @@ app.MapPost(
         if (dto.Amount <= 0)
             return Results.BadRequest("Amount must be positive.");
 
-        if (dto.Amount > debt.Amount)
-        {
-            return Results.BadRequest("Payment cannot be greater than current balance.");
-        }
-
         var payment = new Payment
         {
             Amount = dto.Amount,
@@ -164,11 +159,11 @@ app.MapPost(
 
         db.Payments.Add(payment);
 
-        debt.Amount -= dto.Amount;
-        if (debt.Amount < 0)
-            debt.Amount = 0; // safety clamp
+        // debt.Amount -= dto.Amount;
+        // if (debt.Amount < 0)
+        //     debt.Amount = 0; // safety clamp
 
-        debt.UpdatedAt = DateTime.UtcNow;
+        // debt.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
 
@@ -220,12 +215,12 @@ app.MapDelete(
         if (payment is null)
             return Results.NotFound();
 
-        var debt = await db.Debts.FindAsync(payment.DebtId);
-        if (debt is not null)
-        {
-            debt.Amount += payment.Amount;
-            debt.UpdatedAt = DateTime.UtcNow;
-        }
+        // var debt = await db.Debts.FindAsync(payment.DebtId);
+        // if (debt is not null)
+        // {
+        //     debt.Amount += payment.Amount;
+        //     debt.UpdatedAt = DateTime.UtcNow;
+        // }
 
         db.Payments.Remove(payment);
         await db.SaveChangesAsync();
@@ -245,21 +240,21 @@ app.MapPut(
         if (dto.Amount <= 0)
             return Results.BadRequest("Amount must be positive.");
 
-        var debt = await db.Debts.FindAsync(payment.DebtId);
-
-        if (debt is not null)
-        {
-            var oldAmount = payment.Amount;
-            var newAmount = dto.Amount;
-            var delta = newAmount - oldAmount;
-
-            debt.Amount -= delta;
-
-            if (debt.Amount < 0)
-                debt.Amount = 0;
-
-            debt.UpdatedAt = DateTime.UtcNow;
-        }
+        // var debt = await db.Debts.FindAsync(payment.DebtId);
+        //
+        // if (debt is not null)
+        // {
+        //     var oldAmount = payment.Amount;
+        //     var newAmount = dto.Amount;
+        //     var delta = newAmount - oldAmount;
+        //
+        //     debt.Amount -= delta;
+        //
+        //     if (debt.Amount < 0)
+        //         debt.Amount = 0;
+        //
+        //     debt.UpdatedAt = DateTime.UtcNow;
+        // }
 
         payment.Amount = dto.Amount;
         payment.PaidAt = dto.PaidAt;
@@ -288,7 +283,7 @@ app.MapGet(
         {
             id = d.Id,
             name = d.Name,
-            amount = d.Amount,
+            amount = d.StartingAmount,
             interestRate = d.InterestRate,
             minPayment = d.MinPayment,
             dueDay = d.DueDay,
@@ -311,12 +306,23 @@ app.MapGet(
     "/api/payments",
     async (AppDbContext db, int? limit) =>
     {
-        var query = db.Payments.OrderByDescending(p => p.PaidAt).AsQueryable();
+        var query = db.Payments.Include(p => p.Debt).OrderByDescending(p => p.PaidAt).AsQueryable();
 
         if (limit.HasValue)
             query = query.Take(limit.Value);
 
-        var payments = await query.ToListAsync();
+        var payments = await query
+            .Select(p => new
+            {
+                p.Id,
+                p.Amount,
+                p.PaidAt,
+                Debt = new { p.Debt.Id, p.Debt.Name },
+                OriginalAmount = p.Debt.StartingAmount,
+                MinPayment = p.Debt.MinPayment,
+                InterestRate = p.Debt.InterestRate,
+            })
+            .ToListAsync();
 
         return Results.Ok(payments);
     }
