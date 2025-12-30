@@ -8,3 +8,8 @@ export type Debt = {
     createdAt?: string;
     updatedAt?: string;
 }
+
+export type DebtState = {
+    debt: Debt
+    balance: number
+}

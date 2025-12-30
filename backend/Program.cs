@@ -283,7 +283,7 @@ app.MapGet(
         {
             id = d.Id,
             name = d.Name,
-            amount = d.StartingAmount,
+            startingAmount = d.StartingAmount,
             interestRate = d.InterestRate,
             minPayment = d.MinPayment,
             dueDay = d.DueDay,

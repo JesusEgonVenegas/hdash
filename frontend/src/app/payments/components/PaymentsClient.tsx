@@ -1,12 +1,27 @@
 "use client";
 
 import { Debt } from "@/types/debt";
+import { PaymentApi } from "@/types/payment";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-export default function PaymentsClient({ payments, debts }: { payments: any[], debts: Debt[] }) {
+export interface Row {
+    id: string;
+    amount: number;
+    rawDate: string;
+    date: string;
+    debtName: string
+    debtId: string;
+    originalAmount: number;
+    minPayment: number;
+    interestRate: number;
+    balanceBefore: number;
+    balanceAfter: number;
+}
+
+export default function PaymentsClient({ payments, debts }: { payments: PaymentApi[], debts: Debt[] }) {
     const router = useRouter()
-    const rows = useMemo(() => {
+    const rows = useMemo<Row[]>(() => {
         return payments.map((p) => ({
             id: p.id,
             amount: p.amount,
@@ -21,8 +36,8 @@ export default function PaymentsClient({ payments, debts }: { payments: any[], d
             balanceAfter: 0
         }));
     }, [payments]);
-    const [ledgerRows, setLedgerRows] = useState<any[]>([])
-    const [displayRows, setDisplayRows] = useState<any[]>([]);
+    const [ledgerRows, setLedgerRows] = useState<Row[]>([])
+    const [displayRows, setDisplayRows] = useState<Row[]>([]);
     const [sortOrderAmount, setSortOrderAmount] = useState<"asc" | "desc">("asc")
     const [sortOrderDate, setSortOrderDate] = useState<"asc" | "desc">("asc")
     const [currentFilter, setCurrentFilter] = useState("ALL");
@@ -43,43 +58,49 @@ export default function PaymentsClient({ payments, debts }: { payments: any[], d
     }
 
     function sortByHeader(sortType: string) {
-        let newOrder: "asc" | "desc" = "asc";
-
         if (sortType === "date") {
-            newOrder = sortOrderDate === "asc" ? "desc" : "asc";
+            const newOrder: "asc" | "desc" =
+                sortOrderDate === "asc" ? "desc" : "asc";
+
             setSortOrderDate(newOrder)
-            const sorted = [...displayRows].sort((a, b) => {
-                const aTime = new Date(a.rawDate).getTime()
-                const bTime = new Date(b.rawDate).getTime()
-                return newOrder === "asc"
-                    ? aTime - bTime
-                    : bTime - aTime
-            });
-            setDisplayRows(sorted)
+            setDisplayRows(sortRows(displayRows, newOrder, "date"))
             return;
         }
         if (sortType === "amount") {
-            newOrder = sortOrderAmount === "asc" ? "desc" : "asc";
+            const newOrder: "asc" | "desc" =
+                sortOrderDate === "asc" ? "desc" : "asc";
+
             setSortOrderAmount(newOrder)
-            const sorted = [...displayRows].sort((a, b) => {
-                return newOrder === "asc"
-                    ? a.amount - b.amount
-                    : b.amount - a.amount
-            });
-            setDisplayRows(sorted)
+            setDisplayRows(sortRows(displayRows, newOrder, "amount"))
             return;
         }
     }
 
+    type SortField = "amount" | "date";
+    type SortOrder = "asc" | "desc"
+
+    function sortRows(rows: Row[], order: SortOrder, field: SortField): Row[] {
+        return [...rows].sort((a, b) => {
+            if (field === "amount") {
+                return order === "asc"
+                    ? a.amount - b.amount
+                    : b.amount - a.amount
+            }
+            const aTime = new Date(a.rawDate).getTime()
+            const bTime = new Date(b.rawDate).getTime()
+            return order === "asc" ? aTime - bTime : bTime - aTime;
+        })
+    }
+
     function runningBalance() {
-        const paymentsByDebt = new Map();
+        const paymentsByDebt = new Map<string, Row[]>();
         for (const p of rows) {
             const arr = paymentsByDebt.get(p.debtId) ?? [];
             arr.push(p)
             paymentsByDebt.set(p.debtId, arr)
         }
-        const enriched: any[] = [];
-        for (const [debt, payment] of paymentsByDebt) {
+        const enriched: Row[] = [];
+        for (const [_, payment] of paymentsByDebt) {
             let group = payment.sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
             let running = group[0].originalAmount;
             for (const p of group) {

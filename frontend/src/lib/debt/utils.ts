@@ -1,36 +1,33 @@
-import { Debt } from "@/types/debt"
+import { Debt, DebtState } from "@/types/debt"
 
-export function calculateMonthlyInterest(amount: number, apr: number): number {
+export function calculateMonthlyInterest(balance: number, apr: number): number {
     const monthlyRate = (apr / 100) / 12;
-    return amount * monthlyRate;
+    return balance * monthlyRate;
 }
 
-export function applyMonthlyInterest(amount: number, apr: number): number {
-    const interest = calculateMonthlyInterest(amount, apr);
-    return amount + interest;
+export function applyMonthlyInterest(balance: number, apr: number): number {
+    const interest = calculateMonthlyInterest(balance, apr);
+    return balance + interest;
 }
 
-export function applyPayment(amount: number, payment: number): number {
-    const newAmount = amount - payment;
-
+export function applyPayment(balance: number, payment: number): number {
+    const newAmount = balance - payment;
     // no negative balances
     return newAmount < 0 ? 0 : newAmount;
 }
 
 export function advanceOneMonth(
-    debt: Debt,
+    balance: number,
+    apr: number,
     payment: number
-): { newAmount: number; interest: number } {
+) {
     // apply interest before payment, cc companies do this
     //  interest is based on previous month balance
-    const interest = calculateMonthlyInterest(debt.amount, debt.interestRate)
-    let amountWithInterest = debt.amount + interest
-    const newAmount = applyPayment(amountWithInterest, payment)
+    const interest = calculateMonthlyInterest(balance, apr)
+    let withInterest = balance + interest
+    const newBalance = applyPayment(withInterest, payment)
 
-    return {
-        newAmount,
-        interest
-    }
+    return { newBalance, interest }
 }
 
 export function simulatePayoff(
@@ -38,82 +35,82 @@ export function simulatePayoff(
     payment: number
 ) {
     let month = 0;
-    let amount = debt.amount;
+    let balance = debt.startingAmount;
 
     const timeline: {
         month: number;
-        amount: number;
+        balance: number;
         interest: number;
     }[] = [];
 
     // avoid infinite loops
     const MAX_MONTHS = 600; // 50 years
 
-    while (amount > 0 && month < MAX_MONTHS) {
-        const { newAmount, interest } = advanceOneMonth(
-            { ...debt, amount },
-            payment
+    while (balance > 0 && month < MAX_MONTHS) {
+        const { newBalance, interest } = advanceOneMonth(
+            balance,
+            debt.interestRate,
+            payment,
         );
 
         month++;
-        amount = newAmount;
+        balance = newBalance;
 
         timeline.push({
             month,
-            amount,
+            balance,
             interest
         })
 
         return {
             months: month,
-            finalAmount: amount,
+            finalBalance: balance,
             totalInterest: timeline.reduce((sum, m) => sum + m.interest, 0),
             timeline,
         }
     }
 }
 
-export type DebtWithAmount = Debt & { amount: number };
+export type DebtWithAmount = Debt & { startingAmount: number };
 
 export function simulateMultipleDebts(
     debts: Debt[],
     monthlyBudget: number,
     strategy: "avalanche" | "snowball"
 ) {
-    const workingDebts: DebtWithAmount[] = debts.map(d => ({ ...d }));
+    const workingDebts: DebtState[] = debts.map(d => ({ debt: d, balance: d.startingAmount }));
 
     let month = 0
-    const timeline: any[] = [];
-
+    const timeline: { month: number; debts: { id: string; name: string; balance: number }[] }[] = [];
     const MAX_MONTHS = 600;
 
-    while (workingDebts.some(d => d.amount > 0) && month < MAX_MONTHS) {
+    while (workingDebts.some(s => s.balance > 0) && month < MAX_MONTHS) {
         month++;
 
         const target = pickDebt(workingDebts, strategy);
 
-        const payment = monthlyBudget;
 
-        const { newAmount, interest } = advanceOneMonth(
-            target,
-            payment
+        const { newBalance, interest } = advanceOneMonth(
+            target.balance,
+            target.debt.interestRate,
+            monthlyBudget
         );
 
-        target.amount = newAmount;
+        target.balance = newBalance;
 
         timeline.push({
             month,
-            debts: workingDebts.map(d => ({
-                id: d.id,
-                name: d.name,
-                amount: d.amount
+            debts: workingDebts.map(s => ({
+                id: s.debt.id,
+                name: s.debt.name,
+                balance: s.balance
             }))
         })
     }
 
     const monthlyTotals = timeline.map(entry => ({
         month: entry.month,
-        total: entry.debts.reduce((sum: number, d: Debt) => sum + d.amount, 0)
+        total: entry.debts.reduce((sum, d) => sum + d.balance, 0)
     }));
 
     return {
@@ -123,15 +120,19 @@ export function simulateMultipleDebts(
     };
 }
 
-export function pickDebt(debts: Debt[], strategy: "avalanche" | "snowball") {
-    const unpaid = debts.filter(d => d.amount > 0);
+export function pickDebt(debts: DebtState[], strategy: "avalanche" | "snowball") {
+    const unpaid = debts.filter(s => s.balance > 0);
+
+    if (unpaid.length === 0) {
+        throw new Error("No unpaid debts")
+    }
 
     if (strategy === "avalanche") {
-        return unpaid.sort((a, b) => b.interestRate - a.interestRate)[0];
+        return unpaid.sort((a, b) => b.debt.interestRate - a.debt.interestRate)[0];
     }
 
     if (strategy === "snowball") {
-        return unpaid.sort((a, b) => a.amount - b.amount)[0];
+        return unpaid.sort((a, b) => a.balance - b.balance)[0];
     }
 
     throw new Error("Unknown strategy: " + strategy);
