@@ -1,5 +1,6 @@
 "use client";
 
+import { buildLedgerRows } from "@/lib/payments/ledger";
 import { Debt } from "@/types/debt";
 import { PaymentApi } from "@/types/payment";
 import { useRouter } from "next/navigation";
@@ -68,8 +69,9 @@ export default function PaymentsClient({ payments, debts }: { payments: PaymentA
         }
         if (sortType === "amount") {
             const newOrder: "asc" | "desc" =
-                sortOrderDate === "asc" ? "desc" : "asc";
+                sortOrderAmount === "asc" ? "desc" : "asc";
 
+            console.log(newOrder, sortOrderAmount)
             setSortOrderAmount(newOrder)
             setDisplayRows(sortRows(displayRows, newOrder, "amount"))
             return;
@@ -93,28 +95,7 @@ export default function PaymentsClient({ payments, debts }: { payments: PaymentA
     }
 
     function runningBalance() {
-        const paymentsByDebt = new Map<string, Row[]>();
-        for (const p of rows) {
-            const arr = paymentsByDebt.get(p.debtId) ?? [];
-            arr.push(p)
-            paymentsByDebt.set(p.debtId, arr)
-        }
-        const enriched: Row[] = [];
-        for (const [_, payment] of paymentsByDebt) {
-            let group = payment.sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
-            let running = group[0].originalAmount;
-            for (const p of group) {
-                const before = running;
-                const after = running - p.amount
-                running = after
-
-                enriched.push({
-                    ...p,
-                    balanceBefore: before,
-                    balanceAfter: after
-                })
-            }
-        }
+        const enriched = buildLedgerRows(rows)
         setLedgerRows(enriched)
         setDisplayRows(enriched)
     }
