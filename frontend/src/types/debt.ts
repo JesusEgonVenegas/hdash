@@ -13,3 +13,8 @@ export type DebtState = {
     debt: Debt
     balance: number
 }
+
+export type DebtWithBalance = Debt & {
+    balance: number;
+    paidTotal: number;
+}

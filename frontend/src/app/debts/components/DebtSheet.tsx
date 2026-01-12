@@ -1,22 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Debt } from "@/types/debt";
+import { Debt, DebtWithBalance } from "@/types/debt";
 
 type Mode = "normal" | "insert";
-type ColumnKey = "name" | "startingAmount" | "interestRate" | "minPayment" | "dueDay";
+type ColumnKey = "name" | "balance" | "startingAmount" | "interestRate" | "minPayment" | "dueDay";
 
 const COLUMNS: { key: ColumnKey; label: string; widthClass: string }[] = [
   { key: "name", label: "name", widthClass: "w-40" },
+  { key: "balance", label: "balance", widthClass: "w-28" },
   { key: "startingAmount", label: "amount", widthClass: "w-28" },
   { key: "interestRate", label: "apr", widthClass: "w-20" },
   { key: "minPayment", label: "min_payment", widthClass: "w-28" },
   { key: "dueDay", label: "due_day", widthClass: "w-20" },
 ];
 
-export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
-  // 🧠 local state for debts, guarded against undefined
-  const [debts, setDebts] = useState<Debt[]>(initialDebts ?? []);
+export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBalance[] }) {
+  // local state for debts, guarded against undefined
+  const [debts, setDebts] = useState<DebtWithBalance[]>(initialDebts ?? []);
 
   const [selectedRow, setSelectedRow] = useState(0); // index into debts (0..debts.length-1)
   const [selectedCol, setSelectedCol] = useState(0); // index into COLUMNS (0..4)
@@ -56,7 +57,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
     }
   }, [mode, selectedRow, selectedCol]);
 
-  // 🔑 GLOBAL KEY HANDLER (Vim-ish navigation in NORMAL mode)
+  //  GLOBAL KEY HANDLER (Vim-ish navigation in NORMAL mode)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       // if we're in INSERT mode (editing a cell), ignore sheet-level keys
@@ -153,9 +154,10 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
     if (debts.length === 0) return;
 
     const col = COLUMNS[selectedCol];
+    if (col.key === "balance") return // read-only
+
     const debt = debts[selectedRow];
     const rawValue = (debt as any)[col.key];
-
     setEditingValue(rawValue != null ? String(rawValue) : "");
     setMode("insert");
   }
@@ -341,6 +343,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
     }
 
     const raw = (debt as any)[col.key];
+    console.log(debt)
 
     let display = raw;
     if (col.key === "startingAmount" || col.key === "minPayment") {
@@ -349,6 +352,8 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: Debt[] }) {
       display = `${raw}%`;
     } else if (col.key === "dueDay") {
       display = `day ${raw}`;
+    } else if (col.key === "balance") {
+      display = `$${Number(raw).toLocaleString()}`;
     }
 
     return (
