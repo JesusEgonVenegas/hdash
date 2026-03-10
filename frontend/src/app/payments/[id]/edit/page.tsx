@@ -1,33 +1,53 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
+import { Debt } from "@/types/debt";
 import EditPaymentForm from "@/app/payments/components/EditPaymentForm";
 
-async function getPayment(id: string) {
-    const res = await fetch(`http://localhost:5063/api/payments/${id}`, {
-        cache: "no-store",
-    });
+export default function EditPaymentPage() {
+    const { id } = useParams<{ id: string }>();
+    const { token, isLoading } = useAuth();
+    const [payment, setPayment] = useState<any>(null);
+    const [debts, setDebts] = useState<Debt[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
-    if (!res.ok) return null;
-    return res.json();
-}
+    useEffect(() => {
+        if (isLoading || !token || !id) return;
 
-async function getDebts() {
-    const res = await fetch("http://localhost:5063/api/debts", {
-        cache: "no-store"
-    })
+        async function load() {
+            try {
+                const [p, d] = await Promise.all([
+                    apiFetch<any>(`/api/payments/${id}`, { token }),
+                    apiFetch<Debt[]>("/api/debts", { token }),
+                ]);
+                setPayment(p);
+                setDebts(d);
+            } catch (err: any) {
+                setError(err.message ?? "Failed to load payment");
+            }
+        }
 
-    if (!res.ok) throw new Error("Failed to load debts")
-    return res.json()
-}
+        load();
+    }, [token, isLoading, id]);
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+    if (isLoading || (!payment && !error)) {
+        return (
+            <section className="p-6 text-white">
+                <p className="text-neutral-500 font-mono">loading...</p>
+            </section>
+        );
+    }
 
-    const [payment, debts] = await Promise.all([
-        getPayment(id),
-        getDebts()
-    ])
-
-    if (!payment) return notFound();
+    if (error || !payment) {
+        return (
+            <section className="p-6 text-white">
+                <p className="text-red-400">{error ?? "Payment not found"}</p>
+            </section>
+        );
+    }
 
     return (
         <section className="p-6 text-white">
@@ -36,4 +56,3 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         </section>
     );
 }
-

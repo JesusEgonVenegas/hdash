@@ -21,6 +21,7 @@ interface AuthContextType extends AuthState {
     login: (data: LoginRequest) => Promise<void>;
     register: (data: RegisterRequest) => Promise<void>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,6 +94,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [login]
     );
 
+    const refreshUser = useCallback(async () => {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) return;
+
+        try {
+            const user = await apiFetch<User>("/api/auth/me", { token });
+            setState({
+                user,
+                token,
+                isLoading: false,
+                isAuthenticated: true,
+            });
+        } catch {
+            // token might be invalid, don't crash
+        }
+    }, []);
+
     const logout = useCallback(() => {
         const currentToken = localStorage.getItem(TOKEN_KEY);
         localStorage.removeItem(TOKEN_KEY);
@@ -115,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ ...state, login, register, logout }}>
+        <AuthContext.Provider value={{ ...state, login, register, logout, refreshUser }}>
             {children}
         </AuthContext.Provider>
     );

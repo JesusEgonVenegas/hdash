@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 
 export default function DebtForm() {
   const router = useRouter();
+  const { token } = useAuth();
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
@@ -28,18 +31,11 @@ export default function DebtForm() {
         dueDay: parseInt(dueDay, 10),
       }
 
-      const res = await fetch("http://localhost:5063/api/debts", {
+      await apiFetch("/api/debts", {
         method: "POST",
-        headers: {
-          "Content-type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: payload,
+        token,
       });
-
-      if (!res.ok) {
-        const message = await res.text();
-        throw new Error(message || "Failed to create debt");
-      }
 
       router.push("/debts")
     } catch (err: any) {

@@ -8,7 +8,7 @@ const links = [
     { href: "/", label: "dashboard" },
     { href: "/debts", label: "debts" },
     { href: "/payments", label: "payments" },
-    { href: "/expenses", label: "expenses" },
+    { href: "/household", label: "household" },
 ];
 
 export default function NavBar() {
@@ -46,6 +46,11 @@ export default function NavBar() {
 
                 {user && (
                     <div className="flex items-center gap-3 text-sm">
+                        {user.householdName && (
+                            <span className="text-yellow-400 border border-yellow-600 px-1.5 py-0.5 text-xs">
+                                {user.householdName}
+                            </span>
+                        )}
                         <span className="text-neutral-400">
                             {user.displayName}
                         </span>

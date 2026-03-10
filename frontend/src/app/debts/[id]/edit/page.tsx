@@ -1,21 +1,47 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 import EditDebtForm from "../../components/EditDebtForm";
 
-async function getDebt(id: string) {
-    const res = await fetch(`http://localhost:5063/api/debts/${id}`, {
-        cache: "no-store",
-    });
+export default function EditDebtPage() {
+    const { id } = useParams<{ id: string }>();
+    const { token, isLoading } = useAuth();
+    const [debt, setDebt] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    if (!res.ok) return null;
+    useEffect(() => {
+        if (isLoading || !token || !id) return;
 
-    return res.json();
-}
+        async function load() {
+            try {
+                const d = await apiFetch<any>(`/api/debts/${id}`, { token });
+                setDebt(d);
+            } catch (err: any) {
+                setError(err.message ?? "Debt not found");
+            }
+        }
 
-export default async function EditDebtPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const debt = await getDebt(id);
+        load();
+    }, [token, isLoading, id]);
 
-    if (!debt) return notFound();
+    if (isLoading || (!debt && !error)) {
+        return (
+            <section className="p-6 text-white">
+                <p className="text-neutral-500 font-mono">loading...</p>
+            </section>
+        );
+    }
+
+    if (error || !debt) {
+        return (
+            <section className="p-6 text-white">
+                <p className="text-red-400">{error ?? "Debt not found"}</p>
+            </section>
+        );
+    }
 
     return (
         <section className="p-6 text-white">

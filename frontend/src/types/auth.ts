@@ -2,6 +2,8 @@ export interface User {
     id: string;
     email: string;
     displayName: string;
+    householdId: string | null;
+    householdName: string | null;
 }
 
 export interface AuthResponse {
