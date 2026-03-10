@@ -1,17 +1,15 @@
-import DebtListClient from "./components/DebtListClient";
+import { toDebtWithBalance } from "@/lib/debt/balance";
 import DebtSheet from "./components/DebtSheet";
 
-async function getDebts() {
-    const res = await fetch("http://localhost:5063/api/debts", {
-        cache: "no-store",
-    });
-
-    if (!res.ok) throw new Error("Failed to fetch debts");
+async function getDebtsWithPayments() {
+    const res = await fetch("http://localhost:5063/api/simulation", {cache: "no-store"});
+    if (!res.ok) throw new Error("Failed to fetch simulation debts")
     return res.json();
 }
 
 export default async function DebtsPage() {
-    const debts = await getDebts();
+    const simDebts = await getDebtsWithPayments();
+    const debts = simDebts.map(toDebtWithBalance)
 
     return (
         <section className="text-white font-mono">
