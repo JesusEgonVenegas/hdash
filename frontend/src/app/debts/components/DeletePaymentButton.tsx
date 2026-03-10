@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 
 export default function DeletePaymentButton({ id }: { id: string }) {
+    const { token } = useAuth();
     const [confirming, setConfirming] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -12,13 +15,11 @@ export default function DeletePaymentButton({ id }: { id: string }) {
         setError(null);
 
         try {
-            const res = await fetch(`http://localhost:5063/api/payments/${id}`, {
-                method: "DELETE"
+            await apiFetch(`/api/payments/${id}`, {
+                method: "DELETE",
+                token,
             });
 
-            if (!res.ok) throw new Error("Failed to delete payment");
-
-            // page refresh
             window.location.reload();
         } catch (err: any) {
             setError(err.message);

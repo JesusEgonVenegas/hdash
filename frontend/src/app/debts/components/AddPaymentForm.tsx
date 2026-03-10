@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 
 export default function AddPaymentForm({ debtId }: { debtId: string }) {
+    const { token } = useAuth();
     const [amount, setAmount] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -13,19 +16,14 @@ export default function AddPaymentForm({ debtId }: { debtId: string }) {
         setLoading(true)
 
         try {
-            const res = await fetch(`http://localhost:5063/api/debts/${debtId}/payments`, {
+            await apiFetch(`/api/debts/${debtId}/payments`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+                body: {
                     amount: parseFloat(amount),
                     paidAt: new Date().toISOString(),
-                }),
+                },
+                token,
             });
-
-            if (!res.ok) {
-                const msg = await res.text();
-                throw new Error(msg)
-            }
 
             window.location.reload();
         } catch (err: any) {

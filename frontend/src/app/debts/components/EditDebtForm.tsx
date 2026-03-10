@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 import { Debt } from "@/types/debt";
 
 export default function EditDebtForm({ debt }: { debt: Debt }) {
   const router = useRouter();
+  const { token } = useAuth();
   const [name, setName] = useState(debt.name);
   const [amount, setAmount] = useState(String(debt.startingAmount));
   const [interestRate, setInterestRate] = useState(String(debt.interestRate));
@@ -28,18 +31,11 @@ export default function EditDebtForm({ debt }: { debt: Debt }) {
         dueDay: parseInt(dueDay),
       };
 
-      const res = await fetch(`http://localhost:5063/api/debts/${debt.id}`, {
+      await apiFetch(`/api/debts/${debt.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: payload,
+        token,
       });
-
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || "Failed to update debt");
-      }
 
       router.push(`/debts/${debt.id}`);
     } catch (err: any) {

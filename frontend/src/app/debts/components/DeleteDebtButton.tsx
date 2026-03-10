@@ -2,9 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 
 export default function DeleteDebtButton({ id }: { id: string }) {
     const router = useRouter()
+    const { token } = useAuth();
     const [loading, setLoading] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -14,13 +17,10 @@ export default function DeleteDebtButton({ id }: { id: string }) {
         setError(null);
 
         try {
-            const res = await fetch(`http://localhost:5063/api/debts/${id}`, {
-                method: "DELETE"
+            await apiFetch(`/api/debts/${id}`, {
+                method: "DELETE",
+                token,
             });
-
-            if (!res.ok) {
-                throw new Error("Failed to delete debt");
-            }
 
             router.push("/debts");
         } catch (err: any) {

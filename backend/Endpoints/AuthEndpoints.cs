@@ -1,9 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using backend.Data;
 using backend.DTOs.Auth;
 using backend.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace backend.Endpoints;
@@ -55,6 +57,7 @@ public static class AuthEndpoints
     private static async Task<IResult> Login(
         LoginRequest request,
         UserManager<ApplicationUser> userManager,
+        AppDbContext db,
         IConfiguration configuration)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
@@ -62,26 +65,45 @@ public static class AuthEndpoints
         if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
             return Results.Unauthorized();
 
+        // Load household info for the user
+        await db.Entry(user).Reference(u => u.Household).LoadAsync();
+
         var token = GenerateJwtToken(user, configuration);
         var expirationHours = configuration.GetValue<int>("Jwt:ExpirationHours", 24);
 
         return Results.Ok(new AuthResponse(
             Token: token,
             Expiration: DateTime.UtcNow.AddHours(expirationHours),
-            User: new UserInfo(user.Id, user.Email!, user.DisplayName)
+            User: new UserInfo(
+                user.Id,
+                user.Email!,
+                user.DisplayName,
+                user.HouseholdId?.ToString(),
+                user.Household?.Name
+            )
         ));
     }
 
-    private static IResult GetCurrentUser(ClaimsPrincipal principal)
+    private static async Task<IResult> GetCurrentUser(
+        ClaimsPrincipal principal,
+        AppDbContext db)
     {
         var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        var email = principal.FindFirstValue(ClaimTypes.Email);
-        var displayName = principal.FindFirstValue("DisplayName");
+        if (userId is null) return Results.Unauthorized();
 
-        if (userId is null || email is null)
-            return Results.Unauthorized();
+        var user = await db.Users
+            .Include(u => u.Household)
+            .FirstOrDefaultAsync(u => u.Id == userId);
 
-        return Results.Ok(new UserInfo(userId, email, displayName ?? ""));
+        if (user is null) return Results.Unauthorized();
+
+        return Results.Ok(new UserInfo(
+            user.Id,
+            user.Email!,
+            user.DisplayName,
+            user.HouseholdId?.ToString(),
+            user.Household?.Name
+        ));
     }
 
     private static IResult Logout()
@@ -100,13 +122,18 @@ public static class AuthEndpoints
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email!),
-            new Claim("DisplayName", user.DisplayName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.Email, user.Email!),
+            new("DisplayName", user.DisplayName),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
+
+        if (user.HouseholdId is not null)
+        {
+            claims.Add(new Claim("HouseholdId", user.HouseholdId.Value.ToString()));
+        }
 
         var token = new JwtSecurityToken(
             issuer: configuration["Jwt:Issuer"],

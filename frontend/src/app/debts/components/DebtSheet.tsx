@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 import { Debt, DebtWithBalance } from "@/types/debt";
 
 type Mode = "normal" | "insert";
@@ -16,6 +18,8 @@ const COLUMNS: { key: ColumnKey; label: string; widthClass: string }[] = [
 ];
 
 export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBalance[] }) {
+  const { token } = useAuth();
+
   // local state for debts, guarded against undefined
   const [debts, setDebts] = useState<DebtWithBalance[]>(initialDebts ?? []);
 
@@ -197,20 +201,14 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
     };
 
     try {
-      const res = await fetch(`http://localhost:5063/api/debts/${oldDebt.id}`, {
+      const updatedDebt = await apiFetch<Debt>(`/api/debts/${oldDebt.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payload,
+        token,
       });
-
-      if (!res.ok) {
-        console.error("Failed to update debt");
-      } else {
-        const updatedDebt: Debt = await res.json();
-        setDebts((prev) =>
-          prev.map((d, i) => (i === selectedRow ? updatedDebt : d)),
-        );
-      }
+      setDebts((prev) =>
+        prev.map((d, i) => (i === selectedRow ? { ...d, ...updatedDebt } : d)),
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -245,19 +243,12 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
     }
 
     try {
-      const res = await fetch("http://localhost:5063/api/debts", {
+      const created = await apiFetch<Debt>("/api/debts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payload,
+        token,
       });
-
-      if (!res.ok) {
-        console.error("Failed to create debt");
-        return;
-      }
-
-      const created: Debt = await res.json();
-      setDebts((prev) => [...prev, created]);
+      setDebts((prev) => [...prev, { ...created, balance: created.startingAmount, paidTotal: 0 }]);
 
       // reset form
       setNewDebtName("");
@@ -287,23 +278,17 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
     const debt = debts[selectedRow];
 
     try {
-      const res = await fetch(`http://localhost:5063/api/debts/${debt.id}`, {
+      await apiFetch(`/api/debts/${debt.id}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        token,
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to delete debt");
-      } else {
-        setDebts((prev) => {
-          const updated = prev.filter((_, i) => (i !== selectedRow))
-          const updatedLength = updated.length
-          if (selectedRow >= updatedLength) {
-            setSelectedRow(Math.max(updated.length - 1, 0))
-          }
-          return updated
-        });
-      }
+      setDebts((prev) => {
+        const updated = prev.filter((_, i) => (i !== selectedRow))
+        if (selectedRow >= updated.length) {
+          setSelectedRow(Math.max(updated.length - 1, 0))
+        }
+        return updated
+      });
     } catch (err) {
       console.error(err);
     }

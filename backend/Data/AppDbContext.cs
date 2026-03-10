@@ -11,6 +11,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Debt> Debts => Set<Debt>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Household> Households => Set<Household>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,5 +23,31 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithOne(p => p.Debt)
             .HasForeignKey(p => p.DebtId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Debt>()
+            .HasOne(d => d.User)
+            .WithMany()
+            .HasForeignKey(d => d.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Household>()
+            .HasOne(h => h.Owner)
+            .WithMany()
+            .HasForeignKey(h => h.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder
+            .Entity<ApplicationUser>()
+            .HasOne(u => u.Household)
+            .WithMany(h => h.Members)
+            .HasForeignKey(u => u.HouseholdId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder
+            .Entity<Household>()
+            .HasIndex(h => h.InviteCode)
+            .IsUnique();
     }
 }

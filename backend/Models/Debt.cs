@@ -19,4 +19,7 @@ public class Debt
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public List<Payment> Payments { get; set; } = new();
+
+    public string UserId { get; set; } = string.Empty;
+    public ApplicationUser User { get; set; } = null!;
 }

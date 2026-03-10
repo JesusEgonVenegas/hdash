@@ -3,9 +3,12 @@
 import { Debt } from "@/types/debt";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 
 export default function EditPaymentForm({ payment, debts }: { payment: any, debts: Debt[] }) {
     const router = useRouter();
+    const { token } = useAuth();
 
     const [amount, setAmount] = useState(String(payment.amount));
 
@@ -23,20 +26,15 @@ export default function EditPaymentForm({ payment, debts }: { payment: any, debt
         setError(null);
 
         try {
-            const res = await fetch(`http://localhost:5063/api/payments/${payment.id}`, {
+            await apiFetch(`/api/payments/${payment.id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+                body: {
                     amount: parseFloat(amount),
                     paidAt: new Date(paidAt).toISOString(),
                     debtId: selectedDebtId
-                }),
+                },
+                token,
             });
-
-            if (!res.ok) {
-                const msg = await res.text();
-                throw new Error(msg || "Failed to update payment");
-            }
 
             router.push("/payments");
         } catch (err: any) {
@@ -51,13 +49,10 @@ export default function EditPaymentForm({ payment, debts }: { payment: any, debt
 
         try {
             setLoading(true)
-            const res = await fetch(`http://localhost:5063/api/payments/${payment.id}`, {
-                method: "DELETE"
+            await apiFetch(`/api/payments/${payment.id}`, {
+                method: "DELETE",
+                token,
             });
-            if (!res.ok) {
-                const msg = await res.text();
-                throw new Error(msg || "Failed to delete payment")
-            }
 
             router.push("/payments")
         } catch (err: any) {

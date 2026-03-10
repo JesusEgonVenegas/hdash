@@ -1,16 +1,30 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
+import { Debt } from "@/types/debt";
 import SimulationClient from "../components/SimulationClient";
 
-async function getSimulationData() {
-    const res = await fetch("http://localhost:5063/api/simulation", {
-        cache: "no-store",
-    });
+export default function DebtSimulationPage() {
+    const { token, isLoading } = useAuth();
+    const [debts, setDebts] = useState<Debt[] | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    if (!res.ok) throw new Error("Failed to load simulation data");
-    return res.json();
-}
+    useEffect(() => {
+        if (isLoading || !token) return;
 
-export default async function DebtSimulationPage() {
-    const debts = await getSimulationData();
+        async function load() {
+            try {
+                const data = await apiFetch<Debt[]>("/api/simulation", { token });
+                setDebts(data);
+            } catch (err: any) {
+                setError(err.message ?? "Failed to load simulation data");
+            }
+        }
+
+        load();
+    }, [token, isLoading]);
 
     return (
         <section className="text-white font-mono space-y-6">
@@ -19,9 +33,14 @@ export default async function DebtSimulationPage() {
             </header>
 
             <div className="ascii-panel p-4">
-                <SimulationClient debts={debts} />
+                {error ? (
+                    <p className="text-red-400">{error}</p>
+                ) : debts === null ? (
+                    <p className="text-neutral-500">loading...</p>
+                ) : (
+                    <SimulationClient debts={debts} />
+                )}
             </div>
         </section>
     );
 }
-
