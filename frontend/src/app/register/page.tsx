@@ -22,7 +22,7 @@ export default function RegisterPage() {
 
         try {
             await register({ displayName, email, password });
-            router.push("/");
+            router.push("/onboarding");
         } catch (err: unknown) {
             if (
                 err &&
