@@ -87,5 +87,6 @@ app.MapDebtEndpoints();
 app.MapSimulationEndpoints();
 app.MapPaymentEndpoints();
 app.MapGroceryEndpoints();
+app.MapChoreEndpoints();
 
 app.Run();
