@@ -86,5 +86,6 @@ app.MapHouseholdEndpoints();
 app.MapDebtEndpoints();
 app.MapSimulationEndpoints();
 app.MapPaymentEndpoints();
+app.MapGroceryEndpoints();
 
 app.Run();

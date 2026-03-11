@@ -12,6 +12,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Debt> Debts => Set<Debt>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Household> Households => Set<Household>();
+    public DbSet<GroceryItem> GroceryItems => Set<GroceryItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,5 +50,19 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Entity<Household>()
             .HasIndex(h => h.InviteCode)
             .IsUnique();
+
+        modelBuilder
+            .Entity<GroceryItem>()
+            .HasOne(g => g.User)
+            .WithMany()
+            .HasForeignKey(g => g.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<GroceryItem>()
+            .HasOne(g => g.Household)
+            .WithMany()
+            .HasForeignKey(g => g.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
