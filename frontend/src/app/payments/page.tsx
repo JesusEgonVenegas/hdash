@@ -32,20 +32,22 @@ export default function PaymentsPage() {
     }, [token, isLoading]);
 
     return (
-        <section className="text-white font-mono space-y-6">
-            <header className="ascii-panel p-4">
-                <h1 className="text-xl font-bold">Payment History</h1>
-            </header>
-
-            <div className="ascii-panel p-4">
-                {error ? (
-                    <p className="text-red-400">{error}</p>
-                ) : payments === null ? (
-                    <p className="text-neutral-500">loading...</p>
-                ) : (
-                    <PaymentsClient payments={payments} debts={debts} />
-                )}
+        <section className="space-y-6">
+            <div className="border border-neutral-700 p-4">
+                <h1 className="text-lg text-green-400">{"> "}PAYMENT HISTORY</h1>
             </div>
+
+            {error ? (
+                <div className="ascii-error">
+                    [ERROR] {error}
+                </div>
+            ) : payments === null ? (
+                <p className="text-neutral-500 text-sm">loading...</p>
+            ) : (
+                <div className="border border-neutral-700 p-4">
+                    <PaymentsClient payments={payments} debts={debts} />
+                </div>
+            )}
         </section>
     );
 }

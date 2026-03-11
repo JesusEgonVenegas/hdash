@@ -15,6 +15,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<GroceryItem> GroceryItems => Set<GroceryItem>();
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
     public DbSet<ChoreItem> ChoreItems => Set<ChoreItem>();
+    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -107,6 +108,20 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(c => c.Household)
             .WithMany()
             .HasForeignKey(c => c.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<CalendarEvent>()
+            .HasOne(e => e.CreatedBy)
+            .WithMany()
+            .HasForeignKey(e => e.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<CalendarEvent>()
+            .HasOne(e => e.Household)
+            .WithMany()
+            .HasForeignKey(e => e.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

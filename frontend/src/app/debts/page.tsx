@@ -28,20 +28,25 @@ export default function DebtsPage() {
     }, [token, isLoading]);
 
     return (
-        <section className="text-white font-mono">
-            {/* PAGE HEADER */}
-            <header className="flex justify-between items-center mb-4 ascii-panel p-4">
-                <h1 className="text-xl">debts</h1>
-
-                <nav className="space-x-4">
-                    <a href="/debts/simulate" className="ascii-button">simulate</a>
-                </nav>
-            </header>
+        <section className="space-y-6">
+            <div className="border border-neutral-700 p-4">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-lg text-green-400">{"> "}DEBTS</h1>
+                    <a
+                        href="/debts/simulate"
+                        className="border border-green-400 py-1 px-3 text-green-400 hover:bg-green-400/10 text-sm"
+                    >
+                        [ SIMULATE ]
+                    </a>
+                </div>
+            </div>
 
             {error ? (
-                <p className="text-red-400">{error}</p>
+                <div className="ascii-error">
+                    [ERROR] {error}
+                </div>
             ) : debts === null ? (
-                <p className="text-neutral-500">loading...</p>
+                <p className="text-neutral-500 text-sm">loading...</p>
             ) : (
                 <DebtSheet initialDebts={debts} />
             )}

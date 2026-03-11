@@ -7,101 +7,108 @@ import { apiFetch } from "@/lib/api";
 import { Debt } from "@/types/debt";
 
 export default function EditDebtForm({ debt }: { debt: Debt }) {
-  const router = useRouter();
-  const { token } = useAuth();
-  const [name, setName] = useState(debt.name);
-  const [amount, setAmount] = useState(String(debt.startingAmount));
-  const [interestRate, setInterestRate] = useState(String(debt.interestRate));
-  const [minPayment, setMinPayment] = useState(String(debt.minPayment));
-  const [dueDay, setDueDay] = useState(String(debt.dueDay));
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
+    const { token } = useAuth();
+    const [name, setName] = useState(debt.name);
+    const [amount, setAmount] = useState(String(debt.startingAmount));
+    const [interestRate, setInterestRate] = useState(String(debt.interestRate));
+    const [minPayment, setMinPayment] = useState(String(debt.minPayment));
+    const [dueDay, setDueDay] = useState(String(debt.dueDay));
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError(null);
 
-    try {
-      const payload = {
-        name,
-        startingAmount: parseFloat(amount),
-        interestRate: parseFloat(interestRate),
-        minPayment: parseFloat(minPayment),
-        dueDay: parseInt(dueDay),
-      };
+        try {
+            const payload = {
+                name,
+                startingAmount: parseFloat(amount),
+                interestRate: parseFloat(interestRate),
+                minPayment: parseFloat(minPayment),
+                dueDay: parseInt(dueDay),
+            };
 
-      await apiFetch(`/api/debts/${debt.id}`, {
-        method: "PUT",
-        body: payload,
-        token,
-      });
+            await apiFetch(`/api/debts/${debt.id}`, {
+                method: "PUT",
+                body: payload,
+                token,
+            });
 
-      router.push(`/debts/${debt.id}`);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Something went wrong");
-    } finally {
-      setIsSubmitting(false);
+            router.push(`/debts/${debt.id}`);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.message || "Something went wrong");
+        } finally {
+            setIsSubmitting(false);
+        }
     }
-  }
 
-  return (
-    <form onSubmit={handleSubmit} className="ascii-panel space-y-4 max-w-md">
-      <div>
-        <label className="block text-neutral-500 text-xs mb-1">Name</label>
-        <input
-          className="ascii-input w-full"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </div>
+    return (
+        <div className="border border-neutral-700 p-6 max-w-md">
+            <h2 className="text-sm text-green-400 mb-6">{"> "}EDIT DEBT</h2>
 
-      <div>
-        <label className="block text-neutral-500 text-xs mb-1">Amount</label>
-        <input
-          className="ascii-input w-full"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-      </div>
+            {error && (
+                <div className="ascii-error mb-4">
+                    [ERROR] {error}
+                </div>
+            )}
 
-      <div>
-        <label className="block text-neutral-500 text-xs mb-1">Interest Rate</label>
-        <input
-          className="ascii-input w-full"
-          value={interestRate}
-          onChange={(e) => setInterestRate(e.target.value)}
-        />
-      </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">NAME:</label>
+                    <input
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                </div>
 
-      <div>
-        <label className="block text-neutral-500 text-xs mb-1">Min Payment</label>
-        <input
-          className="ascii-input w-full"
-          value={minPayment}
-          onChange={(e) => setMinPayment(e.target.value)}
-        />
-      </div>
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">AMOUNT:</label>
+                    <input
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                    />
+                </div>
 
-      <div>
-        <label className="block text-neutral-500 text-xs mb-1">Due Day</label>
-        <input
-          className="ascii-input w-full"
-          value={dueDay}
-          onChange={(e) => setDueDay(e.target.value)}
-        />
-      </div>
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">INTEREST RATE:</label>
+                    <input
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        value={interestRate}
+                        onChange={(e) => setInterestRate(e.target.value)}
+                    />
+                </div>
 
-      <button
-        disabled={isSubmitting}
-        className="ascii-button py-1 px-4 disabled:opacity-50"
-      >
-        {isSubmitting ? "Saving..." : "Save Changes"}
-      </button>
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">MIN PAYMENT:</label>
+                    <input
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        value={minPayment}
+                        onChange={(e) => setMinPayment(e.target.value)}
+                    />
+                </div>
 
-      {error && <p className="text-red-400">{error}</p>}
-    </form>
-  );
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">DUE DAY:</label>
+                    <input
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        value={dueDay}
+                        onChange={(e) => setDueDay(e.target.value)}
+                    />
+                </div>
+
+                <button
+                    disabled={isSubmitting}
+                    className="w-full border border-green-400 py-2 text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
+                >
+                    {isSubmitting ? "Saving..." : "[ SAVE CHANGES ]"}
+                </button>
+            </form>
+        </div>
+    );
 }
-

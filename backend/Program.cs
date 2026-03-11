@@ -89,5 +89,6 @@ app.MapPaymentEndpoints();
 app.MapGroceryEndpoints();
 app.MapTodoEndpoints();
 app.MapChoreEndpoints();
+app.MapCalendarEndpoints();
 
 app.Run();

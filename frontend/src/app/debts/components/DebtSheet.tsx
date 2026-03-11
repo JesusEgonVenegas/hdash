@@ -307,7 +307,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
       return (
         <input
           ref={inputRef}
-          className="bg-black text-white border border-neutral-600 px-1 text-xs w-full"
+          className="bg-transparent text-white border border-green-400 px-1 text-xs w-full focus:outline-none"
           value={editingValue}
           onChange={(e) => setEditingValue(e.target.value)}
           onKeyDown={(e) => {
@@ -328,7 +328,6 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
     }
 
     const raw = (debt as any)[col.key];
-    console.log(debt)
 
     let display = raw;
     if (col.key === "startingAmount" || col.key === "minPayment") {
@@ -356,33 +355,33 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
   // ----------------------
 
   return (
-    <section className="ascii-panel font-mono text-xs space-y-4 max-w-full overflow-x-auto">
+    <section className="border border-neutral-700 p-4 text-xs space-y-4 max-w-full overflow-x-auto">
 
       {/* mode + help */}
       <div className="flex justify-between items-center mb-2">
         <div>
-          <span className="text-neutral-400 mr-2">mode:</span>
+          <span className="text-neutral-400 mr-2">MODE:</span>
           {mode === "normal" ? (
             <span className="text-green-400">[NORMAL]</span>
           ) : (
             <span className="text-yellow-400">[INSERT]</span>
           )}
         </div>
-        <div className="text-neutral-500 text-[0.7rem]">
-          j/k rows · h/l cols · i/Enter edit · a add · dd delete row · Esc cancel
+        <div className="text-neutral-600 text-[0.7rem]">
+          j/k rows · h/l cols · i/Enter edit · a add · dd delete · Esc cancel
         </div>
       </div>
 
       {/* sheet table */}
       <div className="border border-neutral-700 inline-block min-w-full">
         {/* header */}
-        <div className="ascii-table-header bg-neutral-900">
+        <div className="flex px-2 py-1.5 border-b border-neutral-700 bg-neutral-900/50 text-neutral-400">
           {COLUMNS.map((col) => (
             <span
               key={col.key}
-              className={`${col.widthClass} px-2 py-1`}
+              className={`${col.widthClass} px-2`}
             >
-              {col.label}
+              {col.label.toUpperCase()}
             </span>
           ))}
         </div>
@@ -391,12 +390,12 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
         {debts.map((d, rowIdx) => {
           const isDeleteRow = deleteModeRef.current === "pending" && selectedRow === rowIdx;
           return (
-            <div key={d.id} className={`ascii-table-row ${isDeleteRow ? "bg-red-800 text-white" : ""}`}>
+            <div key={d.id} className={`flex px-2 py-1.5 border-b border-neutral-800 ${isDeleteRow ? "bg-red-900/30" : ""}`}>
               {COLUMNS.map((col, colIdx) => (
                 <div
                   key={col.key}
-                  className={`${col.widthClass} px-2 py-1 ${rowIdx === selectedRow && colIdx === selectedCol
-                    ? "border border-blue-500"
+                  className={`${col.widthClass} px-2 ${rowIdx === selectedRow && colIdx === selectedCol
+                    ? "border border-green-400/50"
                     : ""
                     }`}
                 >
@@ -408,13 +407,13 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
         })}
 
         {debts.length === 0 && (
-          <div className="p-2 text-neutral-500">no debts found</div>
+          <div className="p-3 text-neutral-500">no debts found — press &apos;a&apos; to add one</div>
         )}
       </div>
 
       {/* add new debt form */}
       <form
-        className="mt-4 grid grid-cols-5 gap-2 items-end"
+        className="mt-4 grid grid-cols-5 gap-3 items-end"
         onSubmit={handleAddDebt}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
@@ -424,82 +423,67 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
         }}
       >
         <div>
-          <label className="block text-neutral-500 text-[0.7rem]">
-            name
-          </label>
+          <label className="block text-neutral-400 text-xs mb-1">NAME:</label>
           <input
             ref={newNameRef}
             id="new-debt-name"
-            className="w-full bg-black border border-neutral-700 px-2 py-1 text-xs"
+            className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-400"
             value={newDebtName}
             onChange={(e) => setNewDebtName(e.target.value)}
           />
         </div>
 
         <div>
-          <label className="block text-neutral-500 text-[0.7rem]">
-            amount
-          </label>
+          <label className="block text-neutral-400 text-xs mb-1">AMOUNT:</label>
           <input
-            className="w-full bg-black border border-neutral-700 px-2 py-1 text-xs"
+            className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-400"
             value={newAmount}
             onChange={(e) => setNewAmount(e.target.value)}
           />
         </div>
 
         <div>
-          <label className="block text-neutral-500 text-[0.7rem]">
-            apr (%)
-          </label>
+          <label className="block text-neutral-400 text-xs mb-1">APR (%):</label>
           <input
-            className="w-full bg-black border border-neutral-700 px-2 py-1 text-xs"
+            className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-400"
             value={newApr}
             onChange={(e) => setNewApr(e.target.value)}
           />
         </div>
 
         <div>
-          <label className="block text-neutral-500 text-[0.7rem]">
-            min_payment
-          </label>
+          <label className="block text-neutral-400 text-xs mb-1">MIN PAY:</label>
           <input
-            className="w-full bg-black border border-neutral-700 px-2 py-1 text-xs"
+            className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-400"
             value={newMinPayment}
             onChange={(e) => setNewMinPayment(e.target.value)}
           />
         </div>
 
         <div>
-          <label className="block text-neutral-500 text-[0.7rem]">
-            due_day
-          </label>
+          <label className="block text-neutral-400 text-xs mb-1">DUE DAY:</label>
           <input
-            className="w-full bg-black border border-neutral-700 px-2 py-1 text-xs"
+            className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-xs text-white focus:outline-none focus:border-green-400"
             value={newDueDay}
             onChange={(e) => setNewDueDay(e.target.value)}
           />
         </div>
 
-        {/* hidden submit makes Enter work */}
         <button type="submit" className="hidden" />
 
-        {/* optional visible button */}
         <div className="col-span-5 mt-1">
           <button
             type="submit"
-            className="px-3 py-1 text-xs border border-neutral-600 rounded hover:bg-neutral-800"
+            className="border border-green-400 px-4 py-1 text-xs text-green-400 hover:bg-green-400/10 cursor-pointer"
           >
-            add
+            [ ADD ]
           </button>
         </div>
       </form>
 
       {/* shortcuts helper */}
-      <div className="mt-2 border border-neutral-700 p-2 text-[0.7rem] text-neutral-400">
-        <div>Keyboard shortcuts:</div>
-        <div>j/k = move rows · h/l = move cols</div>
-        <div>i or Enter = edit cell · Esc = exit edit</div>
-        <div>a = focus add-new-debt form</div>
+      <div className="border-t border-neutral-800 pt-3 mt-3 text-[0.7rem] text-neutral-600">
+        j/k = rows · h/l = cols · i/Enter = edit · a = add form · dd = delete · Esc = cancel
       </div>
     </section>
   );
