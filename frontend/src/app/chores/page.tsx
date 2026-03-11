@@ -20,7 +20,6 @@ export default function ChoresPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // add form
     const [newName, setNewName] = useState("");
     const [newDescription, setNewDescription] = useState("");
     const [newFrequency, setNewFrequency] = useState<"daily" | "weekly" | "biweekly" | "monthly">("weekly");
@@ -118,8 +117,11 @@ export default function ChoresPage() {
 
     if (isLoading || loading) {
         return (
-            <section className="text-white font-mono p-6">
-                <p className="text-neutral-500">loading...</p>
+            <section className="space-y-6">
+                <div className="border border-neutral-700 p-4">
+                    <h1 className="text-lg text-green-400">{"> "}CHORES</h1>
+                </div>
+                <p className="text-neutral-500 text-sm">loading...</p>
             </section>
         );
     }
@@ -128,81 +130,81 @@ export default function ChoresPage() {
     const completedItems = items.filter((i) => i.isCompletedThisCycle);
 
     return (
-        <section className="text-white font-mono space-y-6">
-            <header className="ascii-panel p-4">
+        <section className="space-y-6">
+            <div className="border border-neutral-700 p-4">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-xl font-bold">Chores</h1>
+                        <h1 className="text-lg text-green-400">{"> "}CHORES</h1>
                         <p className="text-neutral-500 text-xs mt-1">
                             {dueItems.length} active · {completedItems.length} done this cycle
                         </p>
                     </div>
                     <button
                         onClick={() => setShowForm(!showForm)}
-                        className="ascii-button text-sm"
+                        className="border border-green-400 py-1 px-3 text-green-400 hover:bg-green-400/10 cursor-pointer text-sm"
                     >
-                        {showForm ? "cancel" : "+ new"}
+                        {showForm ? "cancel" : "[ + NEW ]"}
                     </button>
                 </div>
-            </header>
+            </div>
 
             {error && (
-                <div className="ascii-panel p-3 border-red-500 text-red-400 text-sm">
-                    {error}
+                <div className="ascii-error">
+                    [ERROR] {error}
                 </div>
             )}
 
             {/* ADD FORM */}
             {showForm && (
-                <div className="ascii-panel p-4">
-                    <form onSubmit={handleAdd} className="space-y-3">
+                <div className="border border-neutral-700 p-6">
+                    <form onSubmit={handleAdd} className="space-y-4">
                         <div>
-                            <label className="block text-neutral-500 text-xs mb-1">chore name</label>
+                            <label className="block text-sm text-neutral-400 mb-1">CHORE NAME:</label>
                             <input
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
                                 placeholder="vacuum living room, take out trash..."
-                                className="ascii-input w-full"
+                                className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400"
                                 autoFocus
                             />
                         </div>
 
                         <div>
-                            <label className="block text-neutral-500 text-xs mb-1">description (optional)</label>
+                            <label className="block text-sm text-neutral-400 mb-1">DESCRIPTION (OPTIONAL):</label>
                             <input
                                 value={newDescription}
                                 onChange={(e) => setNewDescription(e.target.value)}
                                 placeholder="any extra details..."
-                                className="ascii-input w-full"
+                                className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400"
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-neutral-500 text-xs mb-1">frequency</label>
+                                <label className="block text-sm text-neutral-400 mb-1">FREQUENCY:</label>
                                 <select
                                     value={newFrequency}
                                     onChange={(e) => setNewFrequency(e.target.value as any)}
-                                    className="ascii-select w-full"
+                                    className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
                                 >
-                                    <option value="daily">daily</option>
-                                    <option value="weekly">weekly</option>
-                                    <option value="biweekly">every 2 weeks</option>
-                                    <option value="monthly">monthly</option>
+                                    <option value="daily" className="bg-neutral-900">daily</option>
+                                    <option value="weekly" className="bg-neutral-900">weekly</option>
+                                    <option value="biweekly" className="bg-neutral-900">every 2 weeks</option>
+                                    <option value="monthly" className="bg-neutral-900">monthly</option>
                                 </select>
                             </div>
 
                             {members.length > 0 && (
                                 <div>
-                                    <label className="block text-neutral-500 text-xs mb-1">first assignee</label>
+                                    <label className="block text-sm text-neutral-400 mb-1">FIRST ASSIGNEE:</label>
                                     <select
                                         value={newAssignee}
                                         onChange={(e) => setNewAssignee(e.target.value)}
-                                        className="ascii-select w-full"
+                                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
                                     >
-                                        <option value="">me</option>
+                                        <option value="" className="bg-neutral-900">me</option>
                                         {members.map((m) => (
-                                            <option key={m.id} value={m.id}>
+                                            <option key={m.id} value={m.id} className="bg-neutral-900">
                                                 {m.displayName}
                                             </option>
                                         ))}
@@ -214,9 +216,9 @@ export default function ChoresPage() {
                         <button
                             type="submit"
                             disabled={adding || !newName.trim()}
-                            className="ascii-button text-sm disabled:opacity-50"
+                            className="border border-green-400 py-2 px-6 text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
                         >
-                            {adding ? "..." : "add chore"}
+                            {adding ? "Adding..." : "[ ADD CHORE ]"}
                         </button>
                     </form>
                 </div>
@@ -224,13 +226,13 @@ export default function ChoresPage() {
 
             {/* ACTIVE CHORES */}
             {dueItems.length === 0 && completedItems.length === 0 && (
-                <div className="ascii-panel p-4 text-neutral-500 text-sm text-center">
-                    no chores yet — click &quot;+ new&quot; to add one
+                <div className="border border-neutral-700 p-4 text-neutral-500 text-sm text-center">
+                    no chores yet — click &quot;[ + NEW ]&quot; to add one
                 </div>
             )}
 
             {dueItems.length > 0 && (
-                <div className="ascii-panel p-4 space-y-1">
+                <div className="border border-neutral-700 p-4 space-y-1">
                     {dueItems.map((item) => (
                         <ChoreRow
                             key={item.id}
@@ -245,9 +247,9 @@ export default function ChoresPage() {
 
             {/* COMPLETED THIS CYCLE */}
             {completedItems.length > 0 && (
-                <div className="ascii-panel p-4 space-y-1">
+                <div className="border border-neutral-700 p-4 space-y-1">
                     <div className="text-neutral-500 text-xs mb-2">
-                        completed this cycle ({completedItems.length})
+                        COMPLETED THIS CYCLE ({completedItems.length})
                     </div>
                     {completedItems.map((item) => (
                         <ChoreRow
@@ -263,7 +265,7 @@ export default function ChoresPage() {
 
             {/* ROTATION LEGEND */}
             {members.length > 1 && (
-                <div className="ascii-panel p-3">
+                <div className="border border-neutral-700 p-3">
                     <p className="text-neutral-500 text-xs">
                         when a chore is completed, it automatically rotates to the next household member
                     </p>
@@ -305,11 +307,11 @@ function ChoreRow({
                 <button
                     onClick={() => onComplete(item.id)}
                     disabled={item.isCompletedThisCycle}
-                    className={`w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 ${
+                    className={`w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 cursor-pointer ${
                         item.isCompletedThisCycle
                             ? "border-green-500 text-green-400"
                             : isMyTurn
-                            ? "border-green-400 hover:bg-green-900"
+                            ? "border-green-400 hover:bg-green-400/10"
                             : "border-neutral-600 hover:border-green-400"
                     }`}
                     title={item.isCompletedThisCycle ? "Done this cycle" : "Mark as done"}
@@ -379,7 +381,7 @@ function ChoreRow({
 
             <button
                 onClick={() => onDelete(item.id)}
-                className="text-neutral-700 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity ml-2 mt-1"
+                className="text-neutral-700 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity ml-2 mt-1 cursor-pointer"
             >
                 ×
             </button>

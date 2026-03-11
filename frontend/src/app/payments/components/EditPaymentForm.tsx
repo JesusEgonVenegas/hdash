@@ -6,16 +6,16 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 
-export default function EditPaymentForm({ payment, debts }: { payment: any, debts: Debt[] }) {
+export default function EditPaymentForm({ payment, debts }: { payment: any; debts: Debt[] }) {
     const router = useRouter();
     const { token } = useAuth();
 
     const [amount, setAmount] = useState(String(payment.amount));
 
-    const initialDate = payment.paidAt.slice(0, 10); // YYYY-MM-DD
+    const initialDate = payment.paidAt.slice(0, 10);
     const [paidAt, setPaidAt] = useState(initialDate);
 
-    const [selectedDebtId, setSelectedDebtId] = useState(payment.debtId)
+    const [selectedDebtId, setSelectedDebtId] = useState(payment.debtId);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export default function EditPaymentForm({ payment, debts }: { payment: any, debt
                 body: {
                     amount: parseFloat(amount),
                     paidAt: new Date(paidAt).toISOString(),
-                    debtId: selectedDebtId
+                    debtId: selectedDebtId,
                 },
                 token,
             });
@@ -45,84 +45,85 @@ export default function EditPaymentForm({ payment, debts }: { payment: any, debt
     }
 
     async function handleDelete() {
-        if (!confirm("Delete this payment?")) return
+        if (!confirm("Delete this payment?")) return;
 
         try {
-            setLoading(true)
+            setLoading(true);
             await apiFetch(`/api/payments/${payment.id}`, {
                 method: "DELETE",
                 token,
             });
 
-            router.push("/payments")
+            router.push("/payments");
         } catch (err: any) {
-            setError(err.message)
+            setError(err.message);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4 ascii-panel p-4 font-mono">
+        <div className="border border-neutral-700 p-6 max-w-md">
+            <h2 className="text-sm text-green-400 mb-6">{"> "}EDIT PAYMENT</h2>
 
-            {error && <p className="text-red-400">{error}</p>}
+            {error && (
+                <div className="ascii-error mb-4">
+                    [ERROR] {error}
+                </div>
+            )}
 
-            {/* Amount */}
-            <div className="flex flex-col">
-                <label className="text-sm text-neutral-300 mb-1">amount</label>
-                <input
-                    type="number"
-                    className="ascii-input w-full"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">AMOUNT:</label>
+                    <input
+                        type="number"
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                    />
+                </div>
 
-            {/* Date */}
-            <div className="flex flex-col">
-                <label className="text-sm text-neutral-300 mb-1">date</label>
-                <input
-                    type="date"
-                    className="ascii-input w-full"
-                    value={paidAt}
-                    onChange={(e) => setPaidAt(e.target.value)}
-                />
-            </div>
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">DATE:</label>
+                    <input
+                        type="date"
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        value={paidAt}
+                        onChange={(e) => setPaidAt(e.target.value)}
+                    />
+                </div>
 
-            {/* Debt selector */}
-            <div className="flex flex-col">
-                <label className="text-sm text-neutral-300 mb-1">debt</label>
-                <select
-                    value={selectedDebtId}
-                    className="ascii-select w-full"
-                    onChange={(e) => setSelectedDebtId(e.target.value)}
+                <div>
+                    <label className="block text-sm text-neutral-400 mb-1">DEBT:</label>
+                    <select
+                        value={selectedDebtId}
+                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                        onChange={(e) => setSelectedDebtId(e.target.value)}
+                    >
+                        {debts.map((debt) => (
+                            <option key={debt.id} value={debt.id} className="bg-neutral-900">
+                                {debt.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <button
+                    disabled={loading}
+                    className="w-full border border-green-400 py-2 text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
                 >
-                    {debts.map((debt) => (
-                        <option key={debt.id} value={debt.id} className="text-black">
-                            {debt.name}
-                        </option>
-                    ))}
-                </select>
-            </div>
+                    {loading ? "Saving..." : "[ SAVE CHANGES ]"}
+                </button>
 
-            {/* Save */}
-            <button
-                disabled={loading}
-                className="ascii-button mt-2 hover:text-blue-300 disabled:opacity-50"
-            >
-                {loading ? "saving..." : "save changes"}
-            </button>
-
-            {/* Delete */}
-            <button
-                type="button"
-                disabled={loading}
-                onClick={handleDelete}
-                className="ascii-button mt-2 hover:text-red-400 text-red-300 border-red-500 disabled:opacity-50"
-            >
-                delete payment
-            </button>
-
-        </form>
+                <button
+                    type="button"
+                    disabled={loading}
+                    onClick={handleDelete}
+                    className="w-full ascii-button-danger py-2 disabled:opacity-50"
+                >
+                    [ DELETE PAYMENT ]
+                </button>
+            </form>
+        </div>
     );
 }

@@ -11,7 +11,6 @@ export default function HouseholdPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // forms
     const [createName, setCreateName] = useState("");
     const [joinCode, setJoinCode] = useState("");
     const [renameName, setRenameName] = useState("");
@@ -163,68 +162,81 @@ export default function HouseholdPage() {
 
     if (isLoading || loading) {
         return (
-            <section className="text-white font-mono p-6">
-                <p className="text-neutral-500">loading...</p>
+            <section className="space-y-6">
+                <div className="border border-neutral-700 p-4">
+                    <h1 className="text-lg text-green-400">{"> "}HOUSEHOLD</h1>
+                </div>
+                <p className="text-neutral-500 text-sm">loading...</p>
             </section>
         );
     }
 
     const isOwner = user?.id === household?.ownerId;
 
-    // NO HOUSEHOLD — show create/join forms
+    // NO HOUSEHOLD — show create/join
     if (!household) {
         return (
-            <section className="text-white font-mono space-y-6">
-                <header className="ascii-panel p-4">
-                    <h1 className="text-xl font-bold">Household</h1>
-                    <p className="text-neutral-400 text-sm mt-1">
+            <section className="space-y-6">
+                <div className="border border-neutral-700 p-4">
+                    <h1 className="text-lg text-green-400">{"> "}HOUSEHOLD</h1>
+                    <p className="text-neutral-500 text-sm mt-1">
                         Create a new household or join an existing one with an invite code.
                     </p>
-                </header>
+                </div>
 
                 {error && (
-                    <div className="ascii-panel p-3 border-red-500 text-red-400 text-sm">
-                        {error}
+                    <div className="ascii-error">
+                        [ERROR] {error}
                     </div>
                 )}
 
                 {/* CREATE */}
-                <div className="ascii-panel p-4 space-y-3">
-                    <h2 className="text-neutral-300 text-sm">create household</h2>
-                    <form onSubmit={handleCreate} className="flex gap-2">
-                        <input
-                            value={createName}
-                            onChange={(e) => setCreateName(e.target.value)}
-                            placeholder="household name"
-                            className="flex-1 bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none"
-                        />
+                <div className="border border-neutral-700 p-6">
+                    <h2 className="text-sm text-neutral-400 mb-4">CREATE HOUSEHOLD</h2>
+                    <form onSubmit={handleCreate} className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-neutral-400 mb-1">
+                                HOUSEHOLD NAME:
+                            </label>
+                            <input
+                                value={createName}
+                                onChange={(e) => setCreateName(e.target.value)}
+                                placeholder="The Apartment, Casa Smith..."
+                                className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400"
+                            />
+                        </div>
                         <button
                             type="submit"
-                            disabled={submitting}
-                            className="ascii-button text-sm disabled:opacity-50"
+                            disabled={submitting || !createName.trim()}
+                            className="w-full border border-green-400 py-2 text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
                         >
-                            {submitting ? "..." : "create"}
+                            {submitting ? "Creating..." : "[ CREATE ]"}
                         </button>
                     </form>
                 </div>
 
                 {/* JOIN */}
-                <div className="ascii-panel p-4 space-y-3">
-                    <h2 className="text-neutral-300 text-sm">join household</h2>
-                    <form onSubmit={handleJoin} className="flex gap-2">
-                        <input
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value)}
-                            placeholder="invite code"
-                            maxLength={6}
-                            className="w-32 bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm uppercase tracking-widest text-center focus:outline-none"
-                        />
+                <div className="border border-neutral-700 p-6">
+                    <h2 className="text-sm text-neutral-400 mb-4">JOIN WITH INVITE CODE</h2>
+                    <form onSubmit={handleJoin} className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-neutral-400 mb-1">
+                                INVITE CODE:
+                            </label>
+                            <input
+                                value={joinCode}
+                                onChange={(e) => setJoinCode(e.target.value)}
+                                placeholder="ABC123"
+                                maxLength={6}
+                                className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400 uppercase tracking-widest"
+                            />
+                        </div>
                         <button
                             type="submit"
-                            disabled={submitting}
-                            className="ascii-button text-sm disabled:opacity-50"
+                            disabled={submitting || !joinCode.trim()}
+                            className="w-full border border-green-400 py-2 text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
                         >
-                            {submitting ? "..." : "join"}
+                            {submitting ? "Joining..." : "[ JOIN ]"}
                         </button>
                     </form>
                 </div>
@@ -234,11 +246,11 @@ export default function HouseholdPage() {
 
     // HAS HOUSEHOLD — show management view
     return (
-        <section className="text-white font-mono space-y-6">
-            <header className="ascii-panel p-4">
+        <section className="space-y-6">
+            <div className="border border-neutral-700 p-4">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-xl font-bold">{household.name}</h1>
+                        <h1 className="text-lg text-green-400">{"> "}{household.name.toUpperCase()}</h1>
                         <p className="text-neutral-500 text-xs mt-1">
                             created {new Date(household.createdAt).toLocaleDateString()}
                         </p>
@@ -246,29 +258,29 @@ export default function HouseholdPage() {
                     <button
                         onClick={handleLeave}
                         disabled={submitting}
-                        className="text-red-400 hover:text-red-300 text-sm border border-red-600 px-2 py-1 disabled:opacity-50"
+                        className="ascii-button-danger disabled:opacity-50"
                     >
-                        leave
+                        [ LEAVE ]
                     </button>
                 </div>
-            </header>
+            </div>
 
             {error && (
-                <div className="ascii-panel p-3 border-red-500 text-red-400 text-sm">
-                    {error}
+                <div className="ascii-error">
+                    [ERROR] {error}
                 </div>
             )}
 
             {/* INVITE CODE */}
-            <div className="ascii-panel p-4">
-                <div className="text-neutral-400 text-sm mb-2">invite code</div>
-                <div className="flex items-center gap-3">
+            <div className="border border-neutral-700 p-4">
+                <div className="text-sm text-neutral-400 mb-3">INVITE CODE</div>
+                <div className="flex items-center gap-4">
                     <span className="text-2xl tracking-[0.3em] text-green-400 font-bold">
                         {household.inviteCode}
                     </span>
                     <button
                         onClick={copyInviteCode}
-                        className="text-neutral-500 hover:text-white text-sm border border-neutral-600 px-2 py-0.5"
+                        className="ascii-button text-xs"
                     >
                         copy
                     </button>
@@ -276,7 +288,7 @@ export default function HouseholdPage() {
                         <button
                             onClick={handleRegenerateInvite}
                             disabled={submitting}
-                            className="text-neutral-500 hover:text-yellow-400 text-sm border border-neutral-600 px-2 py-0.5 disabled:opacity-50"
+                            className="ascii-button text-xs disabled:opacity-50"
                         >
                             regenerate
                         </button>
@@ -285,24 +297,24 @@ export default function HouseholdPage() {
             </div>
 
             {/* MEMBERS */}
-            <div className="ascii-panel p-4">
-                <div className="text-neutral-400 text-sm mb-2">
-                    members ({household.members.length})
+            <div className="border border-neutral-700 p-4">
+                <div className="text-sm text-neutral-400 mb-3">
+                    MEMBERS ({household.members.length})
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                     {household.members.map((member) => (
                         <div
                             key={member.id}
-                            className="flex justify-between items-center border-b border-neutral-700 pb-2"
+                            className="flex justify-between items-center py-2 border-b border-neutral-800"
                         >
-                            <div>
-                                <span className="text-white">{member.displayName}</span>
-                                <span className="text-neutral-500 text-xs ml-2">{member.email}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-white text-sm">{member.displayName}</span>
+                                <span className="text-neutral-600 text-xs">{member.email}</span>
                                 {member.isOwner && (
-                                    <span className="text-yellow-400 text-xs ml-2">[owner]</span>
+                                    <span className="text-yellow-400 text-xs">[owner]</span>
                                 )}
                                 {member.id === user?.id && (
-                                    <span className="text-green-400 text-xs ml-2">[you]</span>
+                                    <span className="text-green-400 text-xs">[you]</span>
                                 )}
                             </div>
 
@@ -310,7 +322,7 @@ export default function HouseholdPage() {
                                 <button
                                     onClick={() => handleKick(member.id, member.displayName)}
                                     disabled={submitting}
-                                    className="text-red-400 hover:text-red-300 text-xs border border-red-600 px-2 py-0.5 disabled:opacity-50"
+                                    className="ascii-button-danger text-xs disabled:opacity-50"
                                 >
                                     kick
                                 </button>
@@ -322,20 +334,20 @@ export default function HouseholdPage() {
 
             {/* OWNER CONTROLS */}
             {isOwner && (
-                <div className="ascii-panel p-4 space-y-3">
-                    <div className="text-neutral-400 text-sm">owner controls</div>
-                    <form onSubmit={handleRename} className="flex gap-2">
+                <div className="border border-neutral-700 p-6">
+                    <div className="text-sm text-neutral-400 mb-4">RENAME HOUSEHOLD</div>
+                    <form onSubmit={handleRename} className="space-y-4">
                         <input
                             value={renameName}
                             onChange={(e) => setRenameName(e.target.value)}
-                            className="flex-1 bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none"
+                            className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
                         />
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="ascii-button text-sm disabled:opacity-50"
+                            className="border border-green-400 py-2 px-6 text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
                         >
-                            rename
+                            {submitting ? "Saving..." : "[ RENAME ]"}
                         </button>
                     </form>
                 </div>

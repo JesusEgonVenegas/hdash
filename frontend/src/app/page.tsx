@@ -31,23 +31,34 @@ export default function DashboardPage() {
 
     if (isLoading || !data) {
         return (
-            <section className="text-white space-y-8">
-                <h1 className="text-2xl font-bold">Dashboard</h1>
+            <section className="space-y-6">
+                <div className="border border-neutral-700 p-4">
+                    <h1 className="text-lg text-green-400">{"> "}DASHBOARD</h1>
+                </div>
                 {error ? (
-                    <p className="text-red-400">{error}</p>
+                    <div className="ascii-error">
+                        [ERROR] {error}
+                    </div>
                 ) : (
-                    <p className="text-neutral-500 font-mono">loading...</p>
+                    <p className="text-neutral-500 text-sm">loading...</p>
                 )}
             </section>
         );
     }
 
     return (
-        <section className="text-white space-y-8">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+        <section className="space-y-6">
+            <div className="border border-neutral-700 p-4">
+                <h1 className="text-lg text-green-400">{"> "}DASHBOARD</h1>
+                <p className="text-neutral-500 text-xs mt-1">
+                    {user?.householdName
+                        ? `household: ${user.householdName}`
+                        : "personal overview"}
+                </p>
+            </div>
 
             {!user?.householdId && (
-                <div className="ascii-panel p-4 border-yellow-600">
+                <div className="border border-yellow-600/50 bg-yellow-500/5 p-4">
                     <span className="text-yellow-400">[!]</span>{" "}
                     <span className="text-neutral-300 text-sm">
                         You&apos;re not in a household.{" "}

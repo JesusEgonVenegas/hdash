@@ -18,10 +18,8 @@ export default function DashboardClient({
     const debts = data.debts;
     const payments = data.payments;
 
-    // total remaining debt
     const totalDebt = debts.reduce((sum, d) => sum + d.startingAmount, 0);
 
-    // last 30 days
     const now = Date.now();
     const last30Days = payments.filter(
         (p) => now - new Date(p.paidAt).getTime() <= 30 * 24 * 60 * 60 * 1000
@@ -29,71 +27,74 @@ export default function DashboardClient({
     const totalPaid30 = last30Days.reduce((sum, p) => sum + p.amount, 0);
     const avgPayment30 = last30Days.length > 0 ? totalPaid30 / last30Days.length : 0;
 
-    // upcoming due
     const upcoming = [...debts]
         .sort((a, b) => a.dueDay - b.dueDay)
         .slice(0, 3);
 
-    // recent payments
     const recentPayments = [...payments]
         .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())
         .slice(0, 5);
 
     return (
-        <section className="ascii-panel font-mono text-sm">
-
-            {/* HEADER */}
-            <div className="mb-3">
-                <h2 className="ascii-heading">Household Overview</h2>
-            </div>
-
-            {/* TOTAL DEBT */}
-            <div className="mb-4">
-                <div className="text-neutral-500">total_debt:</div>
-                <div className="text-blue-400 text-xl">
-                    ${totalDebt.toLocaleString()}
-                </div>
-            </div>
-
-            {/* LAST 30 DAYS */}
-            <div className="mb-4">
-                <div className="text-neutral-500">last_30_days:</div>
-                <div className="pl-4">
-                    <div>paid ➜ <span className="text-green-400">${totalPaid30.toFixed(0)}</span></div>
-                    <div>avg  ➜ <span className="text-neutral-300">${avgPayment30.toFixed(0)}</span></div>
-                </div>
-            </div>
-
-            {/* UPCOMING */}
-            <div className="mb-4">
-                <div className="text-neutral-500">upcoming_due_dates:</div>
-                {upcoming.map((d) => (
-                    <div key={d.id} className="flex justify-between pl-4 border-b border-neutral-700 py-1">
-                        <span>{d.name}</span>
-                        <span className="text-neutral-400">day {d.dueDay}</span>
+        <div className="space-y-4">
+            {/* STATS ROW */}
+            <div className="grid grid-cols-3 gap-4">
+                <div className="border border-neutral-700 p-4">
+                    <div className="text-neutral-500 text-xs mb-1">TOTAL DEBT</div>
+                    <div className="text-blue-400 text-xl">
+                        ${totalDebt.toLocaleString()}
                     </div>
-                ))}
+                </div>
+                <div className="border border-neutral-700 p-4">
+                    <div className="text-neutral-500 text-xs mb-1">PAID (30 DAYS)</div>
+                    <div className="text-green-400 text-xl">
+                        ${totalPaid30.toFixed(0)}
+                    </div>
+                </div>
+                <div className="border border-neutral-700 p-4">
+                    <div className="text-neutral-500 text-xs mb-1">AVG PAYMENT</div>
+                    <div className="text-neutral-300 text-xl">
+                        ${avgPayment30.toFixed(0)}
+                    </div>
+                </div>
+            </div>
+
+            {/* UPCOMING DUE DATES */}
+            <div className="border border-neutral-700 p-4">
+                <h2 className="text-sm text-green-400 mb-3">{"> "}UPCOMING DUE DATES</h2>
+                {upcoming.length === 0 ? (
+                    <p className="text-neutral-600 text-sm">no debts tracked</p>
+                ) : (
+                    <div className="space-y-1">
+                        {upcoming.map((d) => (
+                            <div key={d.id} className="flex justify-between py-1.5 border-b border-neutral-800 text-sm">
+                                <span className="text-neutral-300">{d.name}</span>
+                                <span className="text-neutral-500">day {d.dueDay}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* RECENT PAYMENTS */}
-            <div>
-                <div className="text-neutral-500">recent_payments:</div>
-
-                {recentPayments.length === 0 && (
-                    <div className="pl-4 text-neutral-600">none</div>
-                )}
-
-                {recentPayments.map((p) => (
-                    <div
-                        key={p.id}
-                        className="flex justify-between pl-4 border-b border-neutral-700 py-1"
-                    >
-                        <span className="text-green-300">${p.amount}</span>
-                        <span className="text-neutral-400">{formatDate(p.paidAt)}</span>
+            <div className="border border-neutral-700 p-4">
+                <h2 className="text-sm text-green-400 mb-3">{"> "}RECENT PAYMENTS</h2>
+                {recentPayments.length === 0 ? (
+                    <p className="text-neutral-600 text-sm">no payments recorded</p>
+                ) : (
+                    <div className="space-y-1">
+                        {recentPayments.map((p) => (
+                            <div
+                                key={p.id}
+                                className="flex justify-between py-1.5 border-b border-neutral-800 text-sm"
+                            >
+                                <span className="text-green-400">${p.amount}</span>
+                                <span className="text-neutral-500">{formatDate(p.paidAt)}</span>
+                            </div>
+                        ))}
                     </div>
-                ))}
+                )}
             </div>
-        </section>
+        </div>
     );
 }
-

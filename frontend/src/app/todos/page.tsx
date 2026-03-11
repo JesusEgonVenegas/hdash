@@ -26,7 +26,6 @@ export default function TodosPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // add form
     const [newTitle, setNewTitle] = useState("");
     const [newPriority, setNewPriority] = useState<"low" | "medium" | "high">("medium");
     const [newDueDate, setNewDueDate] = useState("");
@@ -137,8 +136,11 @@ export default function TodosPage() {
 
     if (isLoading || loading) {
         return (
-            <section className="text-white font-mono p-6">
-                <p className="text-neutral-500">loading...</p>
+            <section className="space-y-6">
+                <div className="border border-neutral-700 p-4">
+                    <h1 className="text-lg text-green-400">{"> "}TODOS</h1>
+                </div>
+                <p className="text-neutral-500 text-sm">loading...</p>
             </section>
         );
     }
@@ -147,11 +149,11 @@ export default function TodosPage() {
     const completedItems = items.filter((i) => i.isCompleted);
 
     return (
-        <section className="text-white font-mono space-y-6">
-            <header className="ascii-panel p-4">
+        <section className="space-y-6">
+            <div className="border border-neutral-700 p-4">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-xl font-bold">Todos</h1>
+                        <h1 className="text-lg text-green-400">{"> "}TODOS</h1>
                         <p className="text-neutral-500 text-xs mt-1">
                             {pendingItems.length} pending · {completedItems.length} done
                         </p>
@@ -160,77 +162,77 @@ export default function TodosPage() {
                         {completedItems.length > 0 && (
                             <button
                                 onClick={handleClearCompleted}
-                                className="text-neutral-400 hover:text-red-400 text-sm border border-neutral-600 px-2 py-1"
+                                className="ascii-button-danger text-sm"
                             >
                                 clear done
                             </button>
                         )}
                         <button
                             onClick={() => setShowForm(!showForm)}
-                            className="ascii-button text-sm"
+                            className="border border-green-400 py-1 px-3 text-green-400 hover:bg-green-400/10 cursor-pointer text-sm"
                         >
-                            {showForm ? "cancel" : "+ new"}
+                            {showForm ? "cancel" : "[ + NEW ]"}
                         </button>
                     </div>
                 </div>
-            </header>
+            </div>
 
             {error && (
-                <div className="ascii-panel p-3 border-red-500 text-red-400 text-sm">
-                    {error}
+                <div className="ascii-error">
+                    [ERROR] {error}
                 </div>
             )}
 
             {/* ADD FORM */}
             {showForm && (
-                <div className="ascii-panel p-4">
-                    <form onSubmit={handleAdd} className="space-y-3">
+                <div className="border border-neutral-700 p-6">
+                    <form onSubmit={handleAdd} className="space-y-4">
                         <div>
-                            <label className="block text-neutral-500 text-xs mb-1">title</label>
+                            <label className="block text-sm text-neutral-400 mb-1">TITLE:</label>
                             <input
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
                                 placeholder="what needs to be done?"
-                                className="ascii-input w-full"
+                                className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400"
                                 autoFocus
                             />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-neutral-500 text-xs mb-1">priority</label>
+                                <label className="block text-sm text-neutral-400 mb-1">PRIORITY:</label>
                                 <select
                                     value={newPriority}
                                     onChange={(e) => setNewPriority(e.target.value as any)}
-                                    className="ascii-select w-full"
+                                    className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
                                 >
-                                    <option value="low">low</option>
-                                    <option value="medium">medium</option>
-                                    <option value="high">high</option>
+                                    <option value="low" className="bg-neutral-900">low</option>
+                                    <option value="medium" className="bg-neutral-900">medium</option>
+                                    <option value="high" className="bg-neutral-900">high</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="block text-neutral-500 text-xs mb-1">due date</label>
+                                <label className="block text-sm text-neutral-400 mb-1">DUE DATE:</label>
                                 <input
                                     type="date"
                                     value={newDueDate}
                                     onChange={(e) => setNewDueDate(e.target.value)}
-                                    className="ascii-input w-full"
+                                    className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
                                 />
                             </div>
 
                             {members.length > 0 && (
                                 <div>
-                                    <label className="block text-neutral-500 text-xs mb-1">assign to</label>
+                                    <label className="block text-sm text-neutral-400 mb-1">ASSIGN TO:</label>
                                     <select
                                         value={newAssignee}
                                         onChange={(e) => setNewAssignee(e.target.value)}
-                                        className="ascii-select w-full"
+                                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
                                     >
-                                        <option value="">unassigned</option>
+                                        <option value="" className="bg-neutral-900">unassigned</option>
                                         {members.map((m) => (
-                                            <option key={m.id} value={m.id}>
+                                            <option key={m.id} value={m.id} className="bg-neutral-900">
                                                 {m.displayName}
                                             </option>
                                         ))}
@@ -242,9 +244,9 @@ export default function TodosPage() {
                         <button
                             type="submit"
                             disabled={adding || !newTitle.trim()}
-                            className="ascii-button text-sm disabled:opacity-50"
+                            className="border border-green-400 py-2 px-6 text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
                         >
-                            {adding ? "..." : "add todo"}
+                            {adding ? "Adding..." : "[ ADD TODO ]"}
                         </button>
                     </form>
                 </div>
@@ -252,13 +254,13 @@ export default function TodosPage() {
 
             {/* PENDING ITEMS */}
             {pendingItems.length === 0 && completedItems.length === 0 && (
-                <div className="ascii-panel p-4 text-neutral-500 text-sm text-center">
-                    no todos yet — click &quot;+ new&quot; to add one
+                <div className="border border-neutral-700 p-4 text-neutral-500 text-sm text-center">
+                    no todos yet — click &quot;[ + NEW ]&quot; to add one
                 </div>
             )}
 
             {pendingItems.length > 0 && (
-                <div className="ascii-panel p-4 space-y-1">
+                <div className="border border-neutral-700 p-4 space-y-1">
                     {pendingItems.map((item) => (
                         <TodoRow
                             key={item.id}
@@ -273,9 +275,9 @@ export default function TodosPage() {
 
             {/* COMPLETED ITEMS */}
             {completedItems.length > 0 && (
-                <div className="ascii-panel p-4 space-y-1">
+                <div className="border border-neutral-700 p-4 space-y-1">
                     <div className="text-neutral-500 text-xs mb-2">
-                        completed ({completedItems.length})
+                        COMPLETED ({completedItems.length})
                     </div>
                     {completedItems.map((item) => (
                         <TodoRow
@@ -317,7 +319,7 @@ function TodoRow({
             <div className="flex items-start gap-3 flex-1 min-w-0">
                 <button
                     onClick={() => onToggle(item.id)}
-                    className={`w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 ${
+                    className={`w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 cursor-pointer ${
                         item.isCompleted
                             ? "border-green-500 text-green-400"
                             : "border-neutral-600 hover:border-green-400"
@@ -372,7 +374,7 @@ function TodoRow({
 
             <button
                 onClick={() => onDelete(item.id)}
-                className="text-neutral-700 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity ml-2 mt-1"
+                className="text-neutral-700 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity ml-2 mt-1 cursor-pointer"
             >
                 ×
             </button>
