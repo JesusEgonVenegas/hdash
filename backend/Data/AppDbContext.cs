@@ -14,6 +14,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Household> Households => Set<Household>();
     public DbSet<GroceryItem> GroceryItems => Set<GroceryItem>();
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
+    public DbSet<ChoreItem> ChoreItems => Set<ChoreItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -85,6 +86,27 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(t => t.Household)
             .WithMany()
             .HasForeignKey(t => t.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<ChoreItem>()
+            .HasOne(c => c.CreatedBy)
+            .WithMany()
+            .HasForeignKey(c => c.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<ChoreItem>()
+            .HasOne(c => c.AssignedTo)
+            .WithMany()
+            .HasForeignKey(c => c.AssignedToUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder
+            .Entity<ChoreItem>()
+            .HasOne(c => c.Household)
+            .WithMany()
+            .HasForeignKey(c => c.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
