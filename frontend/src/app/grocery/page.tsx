@@ -147,7 +147,7 @@ export default function GroceryPage() {
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             placeholder="eggs, milk, bread..."
-                            className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none focus:border-green-400"
+                            className="ascii-input w-full"
                             autoFocus
                         />
                     </div>
@@ -159,7 +159,7 @@ export default function GroceryPage() {
                             placeholder="1"
                             type="number"
                             min="1"
-                            className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none focus:border-green-400"
+                            className="ascii-input w-full"
                         />
                     </div>
                     <button

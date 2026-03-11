@@ -6,19 +6,19 @@ import { useAuth } from "@/lib/auth-context";
 
 const links = [
     { href: "/", label: "dashboard" },
-    { href: "/debts", label: "debts" },
-    { href: "/payments", label: "payments" },
+    { href: "/household", label: "household" },
     { href: "/grocery", label: "grocery" },
     { href: "/todos", label: "todos" },
     { href: "/chores", label: "chores" },
-    { href: "/household", label: "household" },
+    { href: "/debts", label: "debts" },
+    { href: "/payments", label: "payments" },
 ];
 
 export default function NavBar() {
     const pathname = usePathname();
     const { user, logout, isLoading } = useAuth();
 
-    if (pathname === "/login" || pathname === "/register") return null;
+    if (pathname === "/login" || pathname === "/register" || pathname === "/onboarding") return null;
     if (isLoading) return null;
 
     return (

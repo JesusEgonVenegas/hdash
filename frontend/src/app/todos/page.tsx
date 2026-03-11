@@ -191,7 +191,7 @@ export default function TodosPage() {
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
                                 placeholder="what needs to be done?"
-                                className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none focus:border-green-400"
+                                className="ascii-input w-full"
                                 autoFocus
                             />
                         </div>
@@ -202,7 +202,7 @@ export default function TodosPage() {
                                 <select
                                     value={newPriority}
                                     onChange={(e) => setNewPriority(e.target.value as any)}
-                                    className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none"
+                                    className="ascii-select w-full"
                                 >
                                     <option value="low">low</option>
                                     <option value="medium">medium</option>
@@ -216,7 +216,7 @@ export default function TodosPage() {
                                     type="date"
                                     value={newDueDate}
                                     onChange={(e) => setNewDueDate(e.target.value)}
-                                    className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none"
+                                    className="ascii-input w-full"
                                 />
                             </div>
 
@@ -226,7 +226,7 @@ export default function TodosPage() {
                                     <select
                                         value={newAssignee}
                                         onChange={(e) => setNewAssignee(e.target.value)}
-                                        className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none"
+                                        className="ascii-select w-full"
                                     >
                                         <option value="">unassigned</option>
                                         {members.map((m) => (

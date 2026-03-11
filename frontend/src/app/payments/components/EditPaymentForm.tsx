@@ -72,7 +72,7 @@ export default function EditPaymentForm({ payment, debts }: { payment: any, debt
                 <label className="text-sm text-neutral-300 mb-1">amount</label>
                 <input
                     type="number"
-                    className="bg-neutral-900 text-white border border-neutral-600 px-2 py-1 focus:outline-none"
+                    className="ascii-input w-full"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                 />
@@ -83,7 +83,7 @@ export default function EditPaymentForm({ payment, debts }: { payment: any, debt
                 <label className="text-sm text-neutral-300 mb-1">date</label>
                 <input
                     type="date"
-                    className="bg-neutral-900 text-white border border-neutral-600 px-2 py-1 focus:outline-none"
+                    className="ascii-input w-full"
                     value={paidAt}
                     onChange={(e) => setPaidAt(e.target.value)}
                 />
@@ -94,7 +94,7 @@ export default function EditPaymentForm({ payment, debts }: { payment: any, debt
                 <label className="text-sm text-neutral-300 mb-1">debt</label>
                 <select
                     value={selectedDebtId}
-                    className="bg-neutral-900 text-white border border-neutral-600 px-2 py-1 focus:outline-none"
+                    className="ascii-select w-full"
                     onChange={(e) => setSelectedDebtId(e.target.value)}
                 >
                     {debts.map((debt) => (
