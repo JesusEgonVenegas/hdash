@@ -13,6 +13,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Household> Households => Set<Household>();
     public DbSet<GroceryItem> GroceryItems => Set<GroceryItem>();
+    public DbSet<TodoItem> TodoItems => Set<TodoItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,6 +64,27 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(g => g.Household)
             .WithMany()
             .HasForeignKey(g => g.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<TodoItem>()
+            .HasOne(t => t.CreatedBy)
+            .WithMany()
+            .HasForeignKey(t => t.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<TodoItem>()
+            .HasOne(t => t.AssignedTo)
+            .WithMany()
+            .HasForeignKey(t => t.AssignedToUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder
+            .Entity<TodoItem>()
+            .HasOne(t => t.Household)
+            .WithMany()
+            .HasForeignKey(t => t.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
