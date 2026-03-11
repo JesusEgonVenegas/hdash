@@ -47,47 +47,47 @@ export default function EditDebtForm({ debt }: { debt: Debt }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-neutral-900 p-4 rounded">
+    <form onSubmit={handleSubmit} className="ascii-panel space-y-4 max-w-md">
       <div>
-        <label className="block">Name</label>
+        <label className="block text-neutral-500 text-xs mb-1">Name</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
       </div>
 
       <div>
-        <label className="block">Amount</label>
+        <label className="block text-neutral-500 text-xs mb-1">Amount</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
       </div>
 
       <div>
-        <label className="block">Interest Rate</label>
+        <label className="block text-neutral-500 text-xs mb-1">Interest Rate</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           value={interestRate}
           onChange={(e) => setInterestRate(e.target.value)}
         />
       </div>
 
       <div>
-        <label className="block">Min Payment</label>
+        <label className="block text-neutral-500 text-xs mb-1">Min Payment</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           value={minPayment}
           onChange={(e) => setMinPayment(e.target.value)}
         />
       </div>
 
       <div>
-        <label className="block">Due Day</label>
+        <label className="block text-neutral-500 text-xs mb-1">Due Day</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           value={dueDay}
           onChange={(e) => setDueDay(e.target.value)}
         />
@@ -95,7 +95,7 @@ export default function EditDebtForm({ debt }: { debt: Debt }) {
 
       <button
         disabled={isSubmitting}
-        className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        className="ascii-button py-1 px-4 disabled:opacity-50"
       >
         {isSubmitting ? "Saving..." : "Save Changes"}
       </button>

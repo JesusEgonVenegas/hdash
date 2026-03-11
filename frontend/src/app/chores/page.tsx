@@ -162,7 +162,7 @@ export default function ChoresPage() {
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
                                 placeholder="vacuum living room, take out trash..."
-                                className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none focus:border-green-400"
+                                className="ascii-input w-full"
                                 autoFocus
                             />
                         </div>
@@ -173,7 +173,7 @@ export default function ChoresPage() {
                                 value={newDescription}
                                 onChange={(e) => setNewDescription(e.target.value)}
                                 placeholder="any extra details..."
-                                className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none focus:border-green-400"
+                                className="ascii-input w-full"
                             />
                         </div>
 
@@ -183,7 +183,7 @@ export default function ChoresPage() {
                                 <select
                                     value={newFrequency}
                                     onChange={(e) => setNewFrequency(e.target.value as any)}
-                                    className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none"
+                                    className="ascii-select w-full"
                                 >
                                     <option value="daily">daily</option>
                                     <option value="weekly">weekly</option>
@@ -198,7 +198,7 @@ export default function ChoresPage() {
                                     <select
                                         value={newAssignee}
                                         onChange={(e) => setNewAssignee(e.target.value)}
-                                        className="w-full bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm focus:outline-none"
+                                        className="ascii-select w-full"
                                     >
                                         <option value="">me</option>
                                         {members.map((m) => (

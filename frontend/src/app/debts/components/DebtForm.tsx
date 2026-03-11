@@ -50,9 +50,9 @@ export default function DebtForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
       <div>
-        <label className="block mb-1">Debt Name</label>
+        <label className="block text-neutral-500 text-xs mb-1">Debt Name</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="RappiCard, Nu, etc..."
@@ -61,9 +61,9 @@ export default function DebtForm() {
       </div>
 
       <div>
-        <label className="block mb-1">Amount</label>
+        <label className="block text-neutral-500 text-xs mb-1">Amount</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -72,9 +72,9 @@ export default function DebtForm() {
       </div>
 
       <div>
-        <label className="block mb-1">Interest Rate (%)</label>
+        <label className="block text-neutral-500 text-xs mb-1">Interest Rate (%)</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           type="number"
           value={interestRate}
           onChange={(e) => setInterestRate(e.target.value)}
@@ -83,9 +83,9 @@ export default function DebtForm() {
       </div>
 
       <div>
-        <label className="block mb-1">Minimum Payment</label>
+        <label className="block text-neutral-500 text-xs mb-1">Minimum Payment</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           type="number"
           value={minPayment}
           onChange={(e) => setMinPayment(e.target.value)}
@@ -94,9 +94,9 @@ export default function DebtForm() {
       </div>
 
       <div>
-        <label className="block mb-1">Due Day (1–31)</label>
+        <label className="block text-neutral-500 text-xs mb-1">Due Day (1–31)</label>
         <input
-          className="w-full p-2 text-black bg-neutral-500"
+          className="ascii-input w-full"
           type="number"
           min="1"
           max="31"
@@ -108,7 +108,7 @@ export default function DebtForm() {
 
       <button
         type="submit"
-        className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+        className="ascii-button py-1 px-4"
       >
         {isSubmitting ? "Saving..." : "Add Debt"}
       </button>
