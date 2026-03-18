@@ -58,6 +58,16 @@ export default function CalendarPage() {
 
     // Detail view
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [isEditingEvent, setIsEditingEvent] = useState(false);
+
+    // Edit form state
+    const [editTitle, setEditTitle] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+    const [editStartDate, setEditStartDate] = useState("");
+    const [editEndDate, setEditEndDate] = useState("");
+    const [editIsAllDay, setEditIsAllDay] = useState(false);
+    const [editColor, setEditColor] = useState("green");
+    const [saving, setSaving] = useState(false);
 
     const monthKey = getMonthKey(viewDate);
 
@@ -131,6 +141,46 @@ export default function CalendarPage() {
         }
     }
 
+    function openEdit(evt: CalendarEvent) {
+        setEditTitle(evt.title);
+        setEditDescription(evt.description ?? "");
+        setEditStartDate(new Date(evt.startDate).toISOString().split("T")[0]);
+        setEditEndDate(evt.endDate ? new Date(evt.endDate).toISOString().split("T")[0] : "");
+        setEditIsAllDay(evt.isAllDay);
+        setEditColor(evt.color);
+        setIsEditingEvent(true);
+    }
+
+    async function handleUpdate(e: React.FormEvent) {
+        e.preventDefault();
+        if (!selectedEvent || !editTitle.trim() || !editStartDate) return;
+        setSaving(true);
+        setError(null);
+        try {
+            const body: any = {
+                title: editTitle.trim(),
+                startDate: new Date(editStartDate).toISOString(),
+                isAllDay: editIsAllDay,
+                color: editColor,
+            };
+            if (editDescription.trim()) body.description = editDescription.trim();
+            if (editEndDate) body.endDate = new Date(editEndDate).toISOString();
+
+            const updated = await apiFetch<CalendarEvent>(`/api/calendar/${selectedEvent.id}`, {
+                method: "PUT",
+                body,
+                token,
+            });
+            setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+            setSelectedEvent(updated);
+            setIsEditingEvent(false);
+        } catch (err: any) {
+            setError(err.data?.error ?? err.message ?? "Failed to update event");
+        } finally {
+            setSaving(false);
+        }
+    }
+
     async function handleDelete(id: string) {
         if (!confirm("Delete this event?")) return;
         try {
@@ -140,6 +190,7 @@ export default function CalendarPage() {
             });
             setEvents(prev => prev.filter(e => e.id !== id));
             setSelectedEvent(null);
+            setIsEditingEvent(false);
         } catch (err: any) {
             setError(err.message ?? "Failed to delete event");
         }
@@ -255,7 +306,7 @@ export default function CalendarPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm text-neutral-400 mb-1">START DATE:</label>
                                 <input
@@ -278,7 +329,7 @@ export default function CalendarPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex items-center gap-3">
                                 <label className="text-sm text-neutral-400">ALL DAY:</label>
                                 <button
@@ -325,7 +376,7 @@ export default function CalendarPage() {
             )}
 
             {/* CALENDAR GRID */}
-            <div className="border border-neutral-700">
+            <div className="border border-neutral-700 overflow-x-auto">
                 {/* Day headers */}
                 <div className="grid grid-cols-7 border-b border-neutral-700">
                     {DAYS.map(day => (
@@ -344,7 +395,7 @@ export default function CalendarPage() {
                         return (
                             <div
                                 key={i}
-                                className={`min-h-[80px] border-b border-r border-neutral-800 p-1 ${
+                                className={`min-h-[60px] sm:min-h-[80px] border-b border-r border-neutral-800 p-1 ${
                                     day === null ? "bg-neutral-900/30" : ""
                                 }`}
                             >
@@ -386,45 +437,143 @@ export default function CalendarPage() {
             {/* EVENT DETAIL PANEL */}
             {selectedEvent && (
                 <div className="border border-neutral-700 p-4">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <div className={`w-3 h-3 rounded-full ${COLOR_DOT[selectedEvent.color] || COLOR_DOT.green}`} />
-                                <h3 className="text-white text-sm font-bold">{selectedEvent.title}</h3>
+                    {isEditingEvent ? (
+                        <form onSubmit={handleUpdate} className="space-y-4">
+                            <div className="text-xs text-green-400 mb-2">{"> "}EDIT EVENT</div>
+                            <div>
+                                <label className="block text-xs text-neutral-400 mb-1">TITLE:</label>
+                                <input
+                                    value={editTitle}
+                                    onChange={e => setEditTitle(e.target.value)}
+                                    className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-green-400"
+                                    autoFocus
+                                />
                             </div>
-                            {selectedEvent.description && (
-                                <p className="text-neutral-400 text-xs mb-2">{selectedEvent.description}</p>
-                            )}
-                            <div className="flex items-center gap-4 text-xs text-neutral-500">
-                                <span>
-                                    {selectedEvent.isAllDay ? "all day" : ""}{" "}
-                                    {new Date(selectedEvent.startDate).toLocaleDateString()}
-                                    {selectedEvent.endDate && (
-                                        <> — {new Date(selectedEvent.endDate).toLocaleDateString()}</>
-                                    )}
-                                </span>
-                                {selectedEvent.createdByName && (
-                                    <span className="text-blue-400">
-                                        by {selectedEvent.createdByName}
-                                    </span>
+                            <div>
+                                <label className="block text-xs text-neutral-400 mb-1">DESCRIPTION:</label>
+                                <input
+                                    value={editDescription}
+                                    onChange={e => setEditDescription(e.target.value)}
+                                    placeholder="optional"
+                                    className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs text-neutral-400 mb-1">START DATE:</label>
+                                    <input
+                                        type="date"
+                                        value={editStartDate}
+                                        onChange={e => setEditStartDate(e.target.value)}
+                                        required
+                                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-green-400"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-neutral-400 mb-1">END DATE:</label>
+                                    <input
+                                        type="date"
+                                        value={editEndDate}
+                                        onChange={e => setEditEndDate(e.target.value)}
+                                        className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-green-400"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <label className="text-xs text-neutral-400">ALL DAY:</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditIsAllDay(!editIsAllDay)}
+                                        className={`w-5 h-5 border flex items-center justify-center text-xs cursor-pointer ${
+                                            editIsAllDay ? "border-green-400 text-green-400" : "border-neutral-600"
+                                        }`}
+                                    >
+                                        {editIsAllDay ? "✓" : ""}
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs text-neutral-400">COLOR:</label>
+                                    <div className="flex gap-1.5">
+                                        {Object.keys(COLOR_DOT).map(c => (
+                                            <button
+                                                key={c}
+                                                type="button"
+                                                onClick={() => setEditColor(c)}
+                                                className={`w-5 h-5 rounded-full ${COLOR_DOT[c]} cursor-pointer ${
+                                                    editColor === c
+                                                        ? "ring-2 ring-white ring-offset-1 ring-offset-black"
+                                                        : "opacity-50 hover:opacity-100"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    type="submit"
+                                    disabled={saving || !editTitle.trim() || !editStartDate}
+                                    className="border border-green-400 px-4 py-1 text-xs text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
+                                >
+                                    {saving ? "saving..." : "[ save ]"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditingEvent(false)}
+                                    className="border border-neutral-700 px-4 py-1 text-xs text-neutral-400 hover:border-neutral-500 cursor-pointer"
+                                >
+                                    cancel
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <div className={`w-3 h-3 rounded-full ${COLOR_DOT[selectedEvent.color] || COLOR_DOT.green}`} />
+                                    <h3 className="text-white text-sm font-bold">{selectedEvent.title}</h3>
+                                </div>
+                                {selectedEvent.description && (
+                                    <p className="text-neutral-400 text-xs mb-2">{selectedEvent.description}</p>
                                 )}
+                                <div className="flex items-center gap-4 text-xs text-neutral-500">
+                                    <span>
+                                        {selectedEvent.isAllDay ? "all day · " : ""}
+                                        {new Date(selectedEvent.startDate).toLocaleDateString()}
+                                        {selectedEvent.endDate && (
+                                            <> — {new Date(selectedEvent.endDate).toLocaleDateString()}</>
+                                        )}
+                                    </span>
+                                    {selectedEvent.createdByName && (
+                                        <span className="text-blue-400">
+                                            by {selectedEvent.createdByName}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => openEdit(selectedEvent)}
+                                    className="ascii-button text-xs"
+                                >
+                                    edit
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(selectedEvent.id)}
+                                    className="ascii-button-danger text-xs"
+                                >
+                                    delete
+                                </button>
+                                <button
+                                    onClick={() => { setSelectedEvent(null); setIsEditingEvent(false); }}
+                                    className="ascii-button text-xs"
+                                >
+                                    close
+                                </button>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => handleDelete(selectedEvent.id)}
-                                className="ascii-button-danger text-xs"
-                            >
-                                delete
-                            </button>
-                            <button
-                                onClick={() => setSelectedEvent(null)}
-                                className="ascii-button text-xs"
-                            >
-                                close
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
 

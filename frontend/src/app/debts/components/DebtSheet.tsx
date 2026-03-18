@@ -39,6 +39,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
   const [newMinPayment, setNewMinPayment] = useState("");
   const [newDueDay, setNewDueDay] = useState("");
   const newNameRef = useRef<HTMLInputElement | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function moveSelection(delta: number) {
     setDeleteMode("none");
@@ -201,6 +202,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
     };
 
     try {
+      setError(null);
       const updatedDebt = await apiFetch<Debt>(`/api/debts/${oldDebt.id}`, {
         method: "PUT",
         body: payload,
@@ -209,8 +211,8 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
       setDebts((prev) =>
         prev.map((d, i) => (i === selectedRow ? { ...d, ...updatedDebt } : d)),
       );
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setError(err.message ?? "Failed to update debt");
     } finally {
       setMode("normal");
       setEditingValue("");
@@ -238,11 +240,12 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
     };
 
     if (!payload.name || payload.startingAmount <= 0) {
-      console.warn("Name and positive amount required");
+      setError("Name and positive amount required");
       return;
     }
 
     try {
+      setError(null);
       const created = await apiFetch<Debt>("/api/debts", {
         method: "POST",
         body: payload,
@@ -257,8 +260,8 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
       setNewMinPayment("");
       setNewDueDay("");
       setMode("normal");
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setError(err.message ?? "Failed to add debt");
     }
   }
 
@@ -413,7 +416,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
 
       {/* add new debt form */}
       <form
-        className="mt-4 grid grid-cols-5 gap-3 items-end"
+        className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 items-end"
         onSubmit={handleAddDebt}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
@@ -471,7 +474,7 @@ export default function DebtSheet({ initialDebts }: { initialDebts?: DebtWithBal
 
         <button type="submit" className="hidden" />
 
-        <div className="col-span-5 mt-1">
+        <div className="col-span-2 sm:col-span-3 md:col-span-5 mt-1">
           <button
             type="submit"
             className="border border-green-400 px-4 py-1 text-xs text-green-400 hover:bg-green-400/10 cursor-pointer"
