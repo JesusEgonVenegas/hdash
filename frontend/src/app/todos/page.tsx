@@ -198,7 +198,7 @@ export default function TodosPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm text-neutral-400 mb-1">PRIORITY:</label>
                                 <select

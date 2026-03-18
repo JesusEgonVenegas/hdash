@@ -8,10 +8,12 @@ import type { TodoItem } from "@/types/todo";
 import type { ChoreItem } from "@/types/chore";
 import type { GroceryItem } from "@/types/grocery";
 import type { CalendarEvent } from "@/types/calendar";
+import type { Debt } from "@/types/debt";
+import type { PaymentApi } from "@/types/payment";
 
 interface DashboardData {
-    debts: any[];
-    payments: any[];
+    debts: Debt[];
+    payments: PaymentApi[];
     todos: TodoItem[];
     chores: ChoreItem[];
     grocery: GroceryItem[];
@@ -40,8 +42,8 @@ export default function DashboardPage() {
                 const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
                 const [debts, payments, todos, chores, grocery, calendar] = await Promise.all([
-                    apiFetch<any[]>("/api/debts", { token }),
-                    apiFetch<any[]>("/api/payments?limit=5", { token }),
+                    apiFetch<Debt[]>("/api/debts", { token }),
+                    apiFetch<PaymentApi[]>("/api/payments?limit=5", { token }),
                     apiFetch<TodoItem[]>("/api/todos", { token }).catch(() => [] as TodoItem[]),
                     apiFetch<ChoreItem[]>("/api/chores", { token }).catch(() => [] as ChoreItem[]),
                     apiFetch<GroceryItem[]>("/api/grocery", { token }).catch(() => [] as GroceryItem[]),
@@ -134,7 +136,7 @@ export default function DashboardPage() {
             )}
 
             {/* QUICK STATS ROW */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Link href="/todos" className="border border-neutral-700 p-4 hover:border-neutral-600 transition-colors">
                     <div className="text-neutral-500 text-xs mb-1">TODOS</div>
                     <div className="text-xl text-white">{pendingTodos.length}</div>
@@ -197,7 +199,7 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* YOUR CHORES */}
                 {myChores.length > 0 && (
                     <div className="border border-neutral-700 p-4">

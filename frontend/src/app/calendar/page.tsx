@@ -255,7 +255,7 @@ export default function CalendarPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm text-neutral-400 mb-1">START DATE:</label>
                                 <input
@@ -278,7 +278,7 @@ export default function CalendarPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex items-center gap-3">
                                 <label className="text-sm text-neutral-400">ALL DAY:</label>
                                 <button
@@ -325,7 +325,7 @@ export default function CalendarPage() {
             )}
 
             {/* CALENDAR GRID */}
-            <div className="border border-neutral-700">
+            <div className="border border-neutral-700 overflow-x-auto">
                 {/* Day headers */}
                 <div className="grid grid-cols-7 border-b border-neutral-700">
                     {DAYS.map(day => (
@@ -344,7 +344,7 @@ export default function CalendarPage() {
                         return (
                             <div
                                 key={i}
-                                className={`min-h-[80px] border-b border-r border-neutral-800 p-1 ${
+                                className={`min-h-[60px] sm:min-h-[80px] border-b border-r border-neutral-800 p-1 ${
                                     day === null ? "bg-neutral-900/30" : ""
                                 }`}
                             >
