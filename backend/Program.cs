@@ -32,7 +32,7 @@ builder.Services
 
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("JWT Key is not configured. Add Jwt:Key to appsettings.Development.json");
+    ?? throw new InvalidOperationException("JWT Key is not configured. Set Jwt__Key environment variable or add Jwt:Key to appsettings.");
 
 builder.Services
     .AddAuthentication(options =>
@@ -57,13 +57,16 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// CORS
+// CORS — reads allowed origins from config (comma-separated)
+var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:3000")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         policy
-            .WithOrigins("http://localhost:3000")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });

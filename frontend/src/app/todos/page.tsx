@@ -33,6 +33,9 @@ export default function TodosPage() {
     const [adding, setAdding] = useState(false);
     const [showForm, setShowForm] = useState(false);
 
+    // editing state
+    const [editingId, setEditingId] = useState<string | null>(null);
+
     const loadItems = useCallback(async () => {
         if (!token) return;
         try {
@@ -108,6 +111,22 @@ export default function TodosPage() {
         }
     }
 
+    async function handleUpdate(id: string, patch: Partial<Pick<TodoItem, "title" | "priority" | "dueDate" | "assignedToUserId">>) {
+        try {
+            const updated = await apiFetch<TodoItem>(`/api/todos/${id}`, {
+                method: "PUT",
+                body: patch,
+                token,
+            });
+            setItems((prev) =>
+                prev.map((item) => (item.id === id ? updated : item))
+            );
+            setEditingId(null);
+        } catch (err: any) {
+            setError(err.message ?? "Failed to update todo");
+        }
+    }
+
     async function handleDelete(id: string) {
         try {
             await apiFetch(`/api/todos/${id}`, {
@@ -115,6 +134,7 @@ export default function TodosPage() {
                 token,
             });
             setItems((prev) => prev.filter((item) => item.id !== id));
+            if (editingId === id) setEditingId(null);
         } catch (err: any) {
             setError(err.message ?? "Failed to delete todo");
         }
@@ -168,7 +188,7 @@ export default function TodosPage() {
                             </button>
                         )}
                         <button
-                            onClick={() => setShowForm(!showForm)}
+                            onClick={() => { setShowForm(!showForm); setEditingId(null); }}
                             className="border border-green-400 py-1 px-3 text-green-400 hover:bg-green-400/10 cursor-pointer text-sm"
                         >
                             {showForm ? "cancel" : "[ + NEW ]"}
@@ -265,8 +285,13 @@ export default function TodosPage() {
                         <TodoRow
                             key={item.id}
                             item={item}
+                            members={members}
                             currentUserId={user?.id}
+                            isEditing={editingId === item.id}
+                            onEdit={() => setEditingId(editingId === item.id ? null : item.id)}
+                            onCancelEdit={() => setEditingId(null)}
                             onToggle={handleToggle}
+                            onUpdate={handleUpdate}
                             onDelete={handleDelete}
                         />
                     ))}
@@ -283,8 +308,13 @@ export default function TodosPage() {
                         <TodoRow
                             key={item.id}
                             item={item}
+                            members={members}
                             currentUserId={user?.id}
+                            isEditing={editingId === item.id}
+                            onEdit={() => setEditingId(editingId === item.id ? null : item.id)}
+                            onCancelEdit={() => setEditingId(null)}
                             onToggle={handleToggle}
+                            onUpdate={handleUpdate}
                             onDelete={handleDelete}
                         />
                     ))}
@@ -296,88 +326,215 @@ export default function TodosPage() {
 
 function TodoRow({
     item,
+    members,
     currentUserId,
+    isEditing,
+    onEdit,
+    onCancelEdit,
     onToggle,
+    onUpdate,
     onDelete,
 }: {
     item: TodoItem;
+    members: HouseholdMember[];
     currentUserId?: string;
+    isEditing: boolean;
+    onEdit: () => void;
+    onCancelEdit: () => void;
     onToggle: (id: string) => void;
+    onUpdate: (id: string, patch: any) => void;
     onDelete: (id: string) => void;
 }) {
+    const [editTitle, setEditTitle] = useState(item.title);
+    const [editPriority, setEditPriority] = useState(item.priority);
+    const [editDueDate, setEditDueDate] = useState(
+        item.dueDate ? new Date(item.dueDate).toISOString().split("T")[0] : ""
+    );
+    const [editAssignee, setEditAssignee] = useState(item.assignedToUserId ?? "");
+    const [saving, setSaving] = useState(false);
+
+    // sync edit state when item changes externally
+    useEffect(() => {
+        if (!isEditing) {
+            setEditTitle(item.title);
+            setEditPriority(item.priority);
+            setEditDueDate(item.dueDate ? new Date(item.dueDate).toISOString().split("T")[0] : "");
+            setEditAssignee(item.assignedToUserId ?? "");
+        }
+    }, [item, isEditing]);
+
+    async function handleSave(e: React.FormEvent) {
+        e.preventDefault();
+        if (!editTitle.trim()) return;
+        setSaving(true);
+        try {
+            const patch: any = {
+                title: editTitle.trim(),
+                priority: editPriority,
+            };
+            if (editDueDate) patch.dueDate = new Date(editDueDate).toISOString();
+            else patch.dueDate = null;
+            if (editAssignee) patch.assignedToUserId = editAssignee;
+            else patch.assignedToUserId = null;
+            await onUpdate(item.id, patch);
+        } finally {
+            setSaving(false);
+        }
+    }
+
     const isOverdue =
         !item.isCompleted &&
         item.dueDate &&
         new Date(item.dueDate) < new Date();
 
     return (
-        <div
-            className={`flex items-start justify-between py-2 border-b border-neutral-800 group ${
-                item.isCompleted ? "opacity-50" : ""
-            }`}
-        >
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-                <button
-                    onClick={() => onToggle(item.id)}
-                    className={`w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 cursor-pointer ${
-                        item.isCompleted
-                            ? "border-green-500 text-green-400"
-                            : "border-neutral-600 hover:border-green-400"
-                    }`}
-                >
-                    {item.isCompleted ? "✓" : ""}
-                </button>
+        <div className={`border-b border-neutral-800 ${item.isCompleted ? "opacity-50" : ""}`}>
+            {/* MAIN ROW */}
+            <div className="flex items-start justify-between py-2 group">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <button
+                        onClick={() => onToggle(item.id)}
+                        className={`w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 cursor-pointer ${
+                            item.isCompleted
+                                ? "border-green-500 text-green-400"
+                                : "border-neutral-600 hover:border-green-400"
+                        }`}
+                    >
+                        {item.isCompleted ? "✓" : ""}
+                    </button>
 
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                        <span
-                            className={`text-sm ${
-                                item.isCompleted
-                                    ? "line-through text-neutral-500"
-                                    : "text-white"
-                            }`}
-                        >
-                            {item.title}
-                        </span>
-                        <span className={`text-xs ${PRIORITY_COLORS[item.priority]}`}>
-                            {PRIORITY_LABELS[item.priority]}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-3 mt-0.5">
-                        {item.dueDate && (
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
                             <span
-                                className={`text-xs ${
-                                    isOverdue ? "text-red-400" : "text-neutral-500"
+                                className={`text-sm ${
+                                    item.isCompleted
+                                        ? "line-through text-neutral-500"
+                                        : "text-white"
                                 }`}
                             >
-                                {isOverdue ? "overdue: " : "due: "}
-                                {new Date(item.dueDate).toLocaleDateString()}
+                                {item.title}
                             </span>
-                        )}
-
-                        {item.assignedToName && (
-                            <span className="text-xs text-blue-400">
-                                @{item.assignedToName}
+                            <span className={`text-xs ${PRIORITY_COLORS[item.priority]}`}>
+                                {PRIORITY_LABELS[item.priority]}
                             </span>
-                        )}
+                        </div>
 
-                        {item.createdByName &&
-                            item.createdByUserId !== currentUserId && (
-                                <span className="text-xs text-neutral-600">
-                                    by {item.createdByName}
+                        <div className="flex items-center gap-3 mt-0.5">
+                            {item.dueDate && (
+                                <span
+                                    className={`text-xs ${
+                                        isOverdue ? "text-red-400" : "text-neutral-500"
+                                    }`}
+                                >
+                                    {isOverdue ? "overdue: " : "due: "}
+                                    {new Date(item.dueDate).toLocaleDateString()}
                                 </span>
                             )}
+
+                            {item.assignedToName && (
+                                <span className="text-xs text-blue-400">
+                                    @{item.assignedToName}
+                                </span>
+                            )}
+
+                            {item.createdByName &&
+                                item.createdByUserId !== currentUserId && (
+                                    <span className="text-xs text-neutral-600">
+                                        by {item.createdByName}
+                                    </span>
+                                )}
+                        </div>
                     </div>
+                </div>
+
+                <div className="flex items-center gap-2 ml-2 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={onEdit}
+                        className="text-neutral-500 hover:text-green-400 text-xs cursor-pointer"
+                    >
+                        {isEditing ? "▲" : "edit"}
+                    </button>
+                    <button
+                        onClick={() => onDelete(item.id)}
+                        className="text-neutral-700 hover:text-red-400 text-xs cursor-pointer"
+                    >
+                        ×
+                    </button>
                 </div>
             </div>
 
-            <button
-                onClick={() => onDelete(item.id)}
-                className="text-neutral-700 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity ml-2 mt-1 cursor-pointer"
-            >
-                ×
-            </button>
+            {/* INLINE EDIT FORM */}
+            {isEditing && (
+                <form
+                    onSubmit={handleSave}
+                    className="pb-3 pl-8 space-y-3"
+                >
+                    <div>
+                        <input
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="w-full bg-transparent border border-neutral-700 px-3 py-1.5 text-sm text-white focus:outline-none focus:border-green-400"
+                            autoFocus
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label className="block text-xs text-neutral-500 mb-1">PRIORITY:</label>
+                            <select
+                                value={editPriority}
+                                onChange={(e) => setEditPriority(e.target.value as any)}
+                                className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-sm text-white focus:outline-none focus:border-green-400"
+                            >
+                                <option value="low" className="bg-neutral-900">low</option>
+                                <option value="medium" className="bg-neutral-900">medium</option>
+                                <option value="high" className="bg-neutral-900">high</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-neutral-500 mb-1">DUE DATE:</label>
+                            <input
+                                type="date"
+                                value={editDueDate}
+                                onChange={(e) => setEditDueDate(e.target.value)}
+                                className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-sm text-white focus:outline-none focus:border-green-400"
+                            />
+                        </div>
+                        {members.length > 0 && (
+                            <div>
+                                <label className="block text-xs text-neutral-500 mb-1">ASSIGNED TO:</label>
+                                <select
+                                    value={editAssignee}
+                                    onChange={(e) => setEditAssignee(e.target.value)}
+                                    className="w-full bg-transparent border border-neutral-700 px-2 py-1.5 text-sm text-white focus:outline-none focus:border-green-400"
+                                >
+                                    <option value="" className="bg-neutral-900">unassigned</option>
+                                    {members.map((m) => (
+                                        <option key={m.id} value={m.id} className="bg-neutral-900">
+                                            {m.displayName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            type="submit"
+                            disabled={saving || !editTitle.trim()}
+                            className="border border-green-400 px-4 py-1 text-xs text-green-400 hover:bg-green-400/10 disabled:opacity-50 cursor-pointer"
+                        >
+                            {saving ? "saving..." : "[ save ]"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onCancelEdit}
+                            className="border border-neutral-700 px-4 py-1 text-xs text-neutral-400 hover:border-neutral-500 cursor-pointer"
+                        >
+                            cancel
+                        </button>
+                    </div>
+                </form>
+            )}
         </div>
     );
 }
