@@ -74,32 +74,39 @@ Set the following environment variables (or use `appsettings.Production.json`):
 
 ## Deployment
 
-### Docker
+### Docker Compose (recommended)
+
+Both services have Dockerfiles. A `docker-compose.yml` is included that wires them together with a persistent data volume for the database.
 
 ```bash
-# Backend image
-cd backend
-dotnet publish -c Release -o out
-# Then containerize with a .NET 9 runtime base image, mount /data as a volume
+# 1. Copy the env template and set your JWT secret
+cp .env.example .env
+# Edit .env and set JWT_SECRET to a random 32+ character string
+# e.g. openssl rand -hex 32
 
-# Frontend image
-cd frontend
-npm run build
-# Deploy the .next output with Next.js standalone or a Node runtime
+# 2. Build and start
+docker compose up --build
+
+# App runs at http://localhost:3000
+# API runs at http://localhost:8080
 ```
 
-### Quick start with a VPS
+Migrations run automatically on first boot via EF Core. The SQLite database is stored in a named Docker volume (`hdash-data`) so it persists across container restarts.
+
+### Production (VPS / cloud)
+
+For a public deployment, update `NEXT_PUBLIC_API_URL` and `Cors__AllowedOrigins` to your real domains:
 
 ```bash
-# Backend — publish and run as a service
-cd backend && dotnet publish -c Release -o /srv/hdash-api
-Jwt__Key="<secret>" dotnet /srv/hdash-api/backend.dll
+# .env
+JWT_SECRET=<your-secret>
 
-# Frontend — build and run
-cd frontend && npm run build && npm start
+# docker-compose.yml overrides (or use a separate compose override file)
+# backend: Cors__AllowedOrigins=https://app.example.com
+# frontend: NEXT_PUBLIC_API_URL=https://api.example.com
 ```
 
-Use nginx or Caddy as a reverse proxy in front of both.
+Put nginx or Caddy in front for TLS termination.
 
 ## Project Structure
 

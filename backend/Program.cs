@@ -74,6 +74,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Auto-apply migrations on startup (safe for SQLite; use with care on large prod DBs)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

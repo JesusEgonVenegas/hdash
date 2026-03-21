@@ -1,0 +1,26 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - hdash-data:/data
+    environment:
+      - Jwt__Key=${JWT_SECRET}
+      - Jwt__Issuer=hdash-api
+      - Jwt__Audience=hdash-frontend
+      - Cors__AllowedOrigins=http://localhost:3000
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  hdash-data:
