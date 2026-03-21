@@ -48,10 +48,14 @@ backend/obj/
 backend/*.user
 backend/*.rsuser
 
-# Dotnet secrets
+# Dotnet secrets — ignore environment-specific overrides but keep Production template
 backend/appsettings.Development.json
 backend/appsettings.Local.json
-backend/appsettings.*.json
+
+# SQLite database — should not be committed to version control
+backend/app.db
+backend/app.db-shm
+backend/app.db-wal
 
 *.tmp
 *.temp

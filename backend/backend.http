@@ -1,6 +1,33 @@
 @backend_HostAddress = http://localhost:5063
+@token = <paste-token-here-after-login>
 
-GET {{backend_HostAddress}}/weatherforecast/
+### Register
+POST {{backend_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@hdash.local",
+  "password": "Test123",
+  "displayName": "Test User"
+}
+
+### Login
+POST {{backend_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@hdash.local",
+  "password": "Test123"
+}
+
+### Get Current User (requires token)
+GET {{backend_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### Get All Debts
+GET {{backend_HostAddress}}/api/debts
 Accept: application/json
 
-###
+### Get All Payments
+GET {{backend_HostAddress}}/api/payments
+Accept: application/json
