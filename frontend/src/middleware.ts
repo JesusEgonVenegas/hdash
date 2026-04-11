@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPaths = ["/login", "/register"];
+// Routes that don't require auth
+const publicPaths = ["/", "/login", "/register", "/offline"];
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    if (publicPaths.some((path) => pathname.startsWith(path))) {
+    if (publicPaths.some((path) => pathname === path || (path !== "/" && pathname.startsWith(path + "/")))) {
         return NextResponse.next();
     }
 
@@ -22,5 +23,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+    matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-touch-icon.svg|manifest.json|sw.js|api).*)"],
 };

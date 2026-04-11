@@ -1,0 +1,13 @@
+bin/
+obj/
+app.db
+app.db-shm
+app.db-wal
+*.user
+appsettings.Development.json
+appsettings.Local.json
+.git
+.gitignore
+*.md
+Dockerfile
+.dockerignore
