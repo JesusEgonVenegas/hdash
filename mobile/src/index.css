@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #262626;
+    --green: #4ade80;
+    --text: #e5e5e5;
+    --muted: #737373;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+    height: 100%;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    overscroll-behavior: none;
+}
+
+/* Safe area insets for notched phones */
+.safe-top    { padding-top:    env(safe-area-inset-top, 0px); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Scrollable content area above bottom nav */
+.page-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Terminal-style focus ring */
+input:focus, select:focus, textarea:focus {
+    outline: 1px solid var(--green);
+    outline-offset: 0;
+}
+
+/* Remove default button styles */
+button {
+    cursor: pointer;
+}
+
+/* Prevent text selection on tap */
+button, label {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }

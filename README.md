@@ -14,12 +14,13 @@ Household dashboard for managing shared living. Track groceries, todos, chores, 
 
 ## Tech Stack
 
-| Layer    | Tech                                                  |
-| -------- | ----------------------------------------------------- |
-| Frontend | Next.js 16, React 19, Tailwind CSS 4, TypeScript      |
-| Backend  | ASP.NET Core 9 (minimal APIs), Entity Framework Core  |
-| Database | SQLite                                                |
-| Auth     | ASP.NET Identity + JWT                                |
+| Layer         | Tech                                                  |
+| ------------- | ----------------------------------------------------- |
+| Frontend      | Next.js 16, React 19, Tailwind CSS 4, TypeScript      |
+| Backend       | ASP.NET Core 9 (minimal APIs), Entity Framework Core  |
+| Database      | SQLite                                                |
+| Auth          | ASP.NET Identity + JWT                                |
+| Mobile (Android) | Capacitor 6, Vite, React 19 — local-first, no backend |
 
 ## Getting Started
 
@@ -108,6 +109,35 @@ JWT_SECRET=<your-secret>
 
 Put nginx or Caddy in front for TLS termination.
 
+## Mobile App (Android)
+
+The `mobile/` directory is a standalone Capacitor app. It stores all data locally on the device (no backend needed) and can be sideloaded or published to the Google Play Store.
+
+### Prerequisites
+
+- [Node.js 20+](https://nodejs.org/)
+- [Android Studio](https://developer.android.com/studio) (for building the APK)
+- Java 17+
+
+### Build and run on device
+
+```bash
+cd mobile
+npm install
+npm run android   # builds, syncs to Capacitor, opens Android Studio
+```
+
+In Android Studio, select your device or emulator and click **Run**.
+
+### Data storage
+
+All data lives in the device's `localStorage`. There is no server.
+
+- **Export**: Settings → Export Backup → saves a `.json` file
+- **Import**: Settings → Import Backup → restores from a `.json` file
+
+This is equivalent to an Obsidian vault or KeePass database — the user owns their data and can move it between devices via the backup file.
+
 ## Project Structure
 
 ```
@@ -119,9 +149,14 @@ hdash/
 │   ├── Migrations/     # EF Core migrations
 │   ├── Models/         # Entity models
 │   └── Program.cs      # App entry point and middleware
-└── frontend/
+├── frontend/
+│   └── src/
+│       ├── app/        # Next.js pages and components
+│       ├── lib/        # Auth context, API helpers
+│       └── types/      # TypeScript interfaces
+└── mobile/
     └── src/
-        ├── app/        # Next.js pages and components
-        ├── lib/        # Auth context, API helpers
-        └── types/      # TypeScript interfaces
+        ├── lib/        # Local data layer (localStorage CRUD)
+        ├── pages/      # All app screens
+        └── components/ # BottomNav and shared UI
 ```
