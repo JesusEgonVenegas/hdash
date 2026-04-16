@@ -181,6 +181,11 @@ export function MorePage() {
                     <div className="text-xs text-neutral-500">Household dashboard — local-first, offline.</div>
                     <div className="text-[10px] text-neutral-700 mt-1">All data lives on your device.</div>
                 </div>
+                <Link to="/privacy"
+                    className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] text-xs text-neutral-500 active:bg-neutral-900">
+                    Privacy Policy
+                    <span className="text-[var(--color-muted)]">›</span>
+                </Link>
             </section>
         </div>
     );
