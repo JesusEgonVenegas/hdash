@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#0a0a0a"/>
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="128" x2="512" y2="128" stroke="#1a1a1a" stroke-width="1"/>
+  <line x1="0" y1="256" x2="512" y2="256" stroke="#1a1a1a" stroke-width="1"/>
+  <line x1="0" y1="384" x2="512" y2="384" stroke="#1a1a1a" stroke-width="1"/>
+  <line x1="128" y1="0" x2="128" y2="512" stroke="#1a1a1a" stroke-width="1"/>
+  <line x1="256" y1="0" x2="256" y2="512" stroke="#1a1a1a" stroke-width="1"/>
+  <line x1="384" y1="0" x2="384" y2="512" stroke="#1a1a1a" stroke-width="1"/>
+  <!-- H -->
+  <text x="256" y="300" font-family="ui-monospace,Menlo,monospace" font-size="220" font-weight="700" fill="#4ade80" text-anchor="middle" dominant-baseline="middle" letter-spacing="-8">H</text>
+  <!-- Glow effect -->
+  <text x="256" y="300" font-family="ui-monospace,Menlo,monospace" font-size="220" font-weight="700" fill="#4ade80" text-anchor="middle" dominant-baseline="middle" letter-spacing="-8" opacity="0.15" filter="url(#glow)">H</text>
+  <defs>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Cursor blink bar -->
+  <rect x="308" y="320" width="30" height="16" fill="#4ade80" rx="1"/>
+</svg>
