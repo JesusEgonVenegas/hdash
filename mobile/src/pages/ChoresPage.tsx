@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { chores } from "../lib/db";
+import { hapticSuccess, hapticLight } from "../lib/haptics";
 import type { ChoreItem, Frequency } from "../lib/db";
 
 const FREQUENCIES: { id: Frequency; label: string }[] = [
@@ -151,8 +152,8 @@ export function ChoresPage() {
                     <ChoreRow
                         key={item.id}
                         item={item}
-                        onComplete={() => { chores.complete(item.id); refresh(); }}
-                        onDelete={() => { chores.remove(item.id); refresh(); }}
+                        onComplete={() => { hapticSuccess(); chores.complete(item.id); refresh(); }}
+                        onDelete={() => { hapticLight(); chores.remove(item.id); refresh(); }}
                     />
                 ))
             )}

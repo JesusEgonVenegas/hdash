@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { grocery } from "../lib/db";
+import { hapticLight } from "../lib/haptics";
 import type { GroceryItem } from "../lib/db";
 
 function AddBar({ onAdd }: { onAdd: (name: string, qty: number, price?: number, cat?: string) => void }) {
@@ -110,7 +111,7 @@ export function GroceryPage() {
                         {items.map((item) => (
                             <div key={item.id}
                                 className="list-row active:bg-neutral-900"
-                                onClick={() => { grocery.toggle(item.id); refresh(); }}>
+                                onClick={() => { hapticLight(); grocery.toggle(item.id); refresh(); }}>
                                 <div className={`checkbox ${item.isChecked ? "checked" : ""}`}>
                                     {item.isChecked ? "✓" : ""}
                                 </div>

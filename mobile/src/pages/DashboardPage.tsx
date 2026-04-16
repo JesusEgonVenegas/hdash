@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { todos, grocery, chores, calendar } from "../lib/db";
 import type { TodoItem, GroceryItem, ChoreItem, CalendarEvent } from "../lib/db";
 
@@ -14,6 +14,14 @@ function StatCard({ label, value, to, warn }: { label: string; value: string | n
         </Link>
     );
 }
+
+const QUICK_ACTIONS = [
+    { to: "/todos",    icon: "✓", label: "TODO"    },
+    { to: "/grocery",  icon: "◈", label: "ITEM"    },
+    { to: "/chores",   icon: "↻", label: "CHORE"   },
+    { to: "/notes",    icon: "📝", label: "NOTE"   },
+    { to: "/budget",   icon: "💰", label: "BUDGET" },
+];
 
 export function DashboardPage() {
     const [todoList,   setTodoList]   = useState<TodoItem[]>([]);
@@ -53,6 +61,17 @@ export function DashboardPage() {
                 <span className="text-[10px] text-[var(--color-muted)]">
                     {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }).toUpperCase()}
                 </span>
+            </div>
+
+            {/* Quick actions */}
+            <div className="flex px-3 gap-2 mt-4 overflow-x-auto pb-1">
+                {QUICK_ACTIONS.map((a) => (
+                    <Link key={a.to} to={a.to}
+                        className="flex flex-col items-center gap-1 px-4 py-2.5 border border-[var(--color-border)] bg-[var(--color-surface)] shrink-0 active:border-[var(--color-accent)] transition-colors">
+                        <span className="text-base">{a.icon}</span>
+                        <span className="text-[9px] tracking-widest text-[var(--color-muted)]">+ {a.label}</span>
+                    </Link>
+                ))}
             </div>
 
             {/* Stats */}

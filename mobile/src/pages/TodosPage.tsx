@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { todos } from "../lib/db";
 import type { TodoItem, Priority } from "../lib/db";
+import { hapticSuccess, hapticLight } from "../lib/haptics";
 
 const PRIORITIES: Priority[] = ["high", "medium", "low"];
 const priorityColor: Record<Priority, string> = {
@@ -143,8 +144,8 @@ export function TodosPage() {
                     <TodoRow
                         key={item.id}
                         item={item}
-                        onToggle={() => { todos.toggle(item.id); refresh(); }}
-                        onDelete={() => { todos.remove(item.id); refresh(); }}
+                        onToggle={() => { hapticSuccess(); todos.toggle(item.id); refresh(); }}
+                        onDelete={() => { hapticLight(); todos.remove(item.id); refresh(); }}
                     />
                 ))
             )}
