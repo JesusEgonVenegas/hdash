@@ -14,6 +14,7 @@ import { BudgetPage }    from "./pages/BudgetPage";
 import { MorePage }      from "./pages/MorePage";
 import { PrivacyPage }   from "./pages/PrivacyPage";
 import { MembersPage }   from "./pages/MembersPage";
+import { StatsPage }     from "./pages/StatsPage";
 
 const ONBOARD_KEY = "hdash_onboarded";
 
@@ -47,6 +48,7 @@ export default function App() {
                             <Route path="/more"     element={<MorePage />} />
                             <Route path="/privacy"  element={<PrivacyPage />} />
                             <Route path="/members"  element={<MembersPage />} />
+                            <Route path="/stats"    element={<StatsPage />} />
                         </Routes>
                     </main>
 

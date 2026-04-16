@@ -87,6 +87,7 @@ export function MorePage() {
                     { to: "/calendar", emoji: "📅", label: "Calendar" },
                     { to: "/debts",    emoji: "💳", label: "Debts" },
                     { to: "/members",  emoji: "👥", label: "Members" },
+                    { to: "/stats",    emoji: "📊", label: "Stats" },
                 ].map(({ to, emoji, label }) => (
                     <Link key={to} to={to}
                         className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--color-border)] text-sm active:bg-neutral-900 transition-colors">
