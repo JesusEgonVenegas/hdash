@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { chores } from "../lib/db";
 import type { ChoreItem, Frequency } from "../lib/db";
 
-const FREQUENCIES: Frequency[] = ["daily", "weekly", "biweekly", "monthly"];
+const FREQUENCIES: { id: Frequency; label: string }[] = [
+    { id: "daily",    label: "DAILY"   },
+    { id: "weekly",   label: "WEEKLY"  },
+    { id: "biweekly", label: "2 WKS"  },
+    { id: "monthly",  label: "MONTHLY" },
+];
 
 function AddBar({ onAdd }: { onAdd: (name: string, freq: Frequency, desc?: string) => void }) {
     const [open, setOpen] = useState(false);
@@ -18,29 +23,37 @@ function AddBar({ onAdd }: { onAdd: (name: string, freq: Frequency, desc?: strin
 
     if (!open) {
         return (
-            <button onClick={() => setOpen(true)} className="w-full border-b border-neutral-800 px-4 py-3 text-left text-sm text-green-400 tracking-wider active:bg-neutral-900">
+            <button onClick={() => setOpen(true)}
+                className="w-full border-b border-[var(--color-border)] px-4 py-3 text-left text-xs tracking-widest active:bg-neutral-900"
+                style={{ color: "var(--color-accent)" }}>
                 + ADD CHORE
             </button>
         );
     }
 
     return (
-        <div className="border-b border-neutral-800 bg-[#111] p-3 flex flex-col gap-2">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Chore name..."
-                className="bg-[#0a0a0a] border border-neutral-700 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-600 w-full" />
-            <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Description (optional)"
-                className="bg-[#0a0a0a] border border-neutral-700 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-600 w-full" />
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col gap-2">
+            <input value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="Chore name..."
+                className="input-field" />
+            <input value={desc} onChange={(e) => setDesc(e.target.value)}
+                placeholder="Description (optional)"
+                className="input-field" />
             <div className="grid grid-cols-4 gap-1">
                 {FREQUENCIES.map((f) => (
-                    <button key={f} onClick={() => setFreq(f)}
-                        className={`py-1 text-[10px] tracking-wider border ${freq === f ? "border-green-400 text-green-400" : "border-neutral-700 text-neutral-500"}`}>
-                        {f === "biweekly" ? "2WK" : f.toUpperCase().slice(0, 3)}
+                    <button key={f.id} onClick={() => setFreq(f.id)}
+                        className="py-1.5 text-[9px] tracking-wider border transition-colors"
+                        style={{
+                            borderColor: freq === f.id ? "var(--color-accent)" : "var(--color-border)",
+                            color: freq === f.id ? "var(--color-accent)" : "var(--color-muted)",
+                        }}>
+                        {f.label}
                     </button>
                 ))}
             </div>
             <div className="flex gap-2">
-                <button onClick={submit} className="flex-1 py-2 bg-green-400 text-black text-xs font-bold tracking-wider">SAVE</button>
-                <button onClick={() => setOpen(false)} className="flex-1 py-2 border border-neutral-700 text-neutral-400 text-xs tracking-wider">CANCEL</button>
+                <button onClick={submit} className="btn-primary flex-1">SAVE</button>
+                <button onClick={() => setOpen(false)} className="btn-ghost flex-1">CANCEL</button>
             </div>
         </div>
     );
@@ -48,43 +61,59 @@ function AddBar({ onAdd }: { onAdd: (name: string, freq: Frequency, desc?: strin
 
 function ChoreRow({ item, onComplete, onDelete }: {
     item: ChoreItem;
-    onComplete: (id: string) => void;
-    onDelete: (id: string) => void;
+    onComplete: () => void;
+    onDelete: () => void;
 }) {
     const [expanded, setExpanded] = useState(false);
     const isOverdue = !item.isCompletedThisCycle && new Date(item.nextDueDate) < new Date();
+    const dueDate   = new Date(item.nextDueDate);
+    const daysUntil = Math.ceil((dueDate.getTime() - Date.now()) / 86400000);
 
     return (
-        <div className="border-b border-neutral-800 last:border-0">
-            <div className="flex items-center gap-3 px-4 py-3 active:bg-neutral-900" onClick={() => setExpanded((v) => !v)}>
+        <div className="border-b border-[var(--color-border)] last:border-0">
+            <div className="list-row" onClick={() => setExpanded((v) => !v)}>
                 <button
-                    onClick={(e) => { e.stopPropagation(); if (!item.isCompletedThisCycle) onComplete(item.id); }}
-                    className={`w-5 h-5 shrink-0 border flex items-center justify-center text-[10px] ${
-                        item.isCompletedThisCycle ? "border-green-400 text-green-400 bg-green-400/10" : isOverdue ? "border-red-400" : "border-neutral-600"
-                    }`}
+                    onClick={(e) => { e.stopPropagation(); if (!item.isCompletedThisCycle) onComplete(); }}
+                    className={`checkbox ${item.isCompletedThisCycle ? "checked" : ""} ${isOverdue ? "!border-red-400" : ""}`}
                 >
                     {item.isCompletedThisCycle ? "✓" : ""}
                 </button>
                 <div className="flex-1 min-w-0">
-                    <div className={`text-sm truncate ${item.isCompletedThisCycle ? "line-through text-neutral-600" : "text-neutral-200"}`}>
+                    <div className={`text-sm truncate ${item.isCompletedThisCycle ? "line-through text-[var(--color-muted)]" : ""}`}>
                         {item.name}
                     </div>
                     {item.description && (
-                        <div className="text-[10px] text-neutral-600 truncate">{item.description}</div>
+                        <div className="text-[10px] text-[var(--color-muted)] truncate mt-0.5">{item.description}</div>
                     )}
                 </div>
-                <div className="text-right shrink-0">
-                    <div className="text-[10px] text-neutral-500">{item.frequency.toUpperCase()}</div>
+                <div className="text-right shrink-0 ml-2">
+                    <div className="label">{item.frequency}</div>
                     {!item.isCompletedThisCycle && (
-                        <div className={`text-[10px] ${isOverdue ? "text-red-400" : "text-neutral-600"}`}>
-                            {isOverdue ? "OVERDUE" : new Date(item.nextDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        <div className={`text-[10px] mt-0.5 ${isOverdue ? "text-red-400" : daysUntil <= 1 ? "text-orange-400" : "text-[var(--color-muted)]"}`}>
+                            {isOverdue
+                                ? "OVERDUE"
+                                : daysUntil === 0
+                                ? "TODAY"
+                                : daysUntil === 1
+                                ? "TOMORROW"
+                                : dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         </div>
                     )}
                 </div>
             </div>
             {expanded && (
-                <div className="px-4 pb-3 bg-[#111] flex justify-end">
-                    <button onClick={() => onDelete(item.id)} className="text-[10px] text-red-400 tracking-wider">DELETE</button>
+                <div className="flex border-t border-[var(--color-border)]">
+                    {!item.isCompletedThisCycle && (
+                        <button onClick={onComplete}
+                            className="flex-1 py-2 text-[10px] tracking-wider border-r border-[var(--color-border)] active:bg-neutral-900"
+                            style={{ color: "var(--color-accent)" }}>
+                            MARK DONE
+                        </button>
+                    )}
+                    <button onClick={onDelete}
+                        className="flex-1 py-2 text-[10px] tracking-wider text-red-400 active:bg-neutral-900">
+                        DELETE
+                    </button>
                 </div>
             )}
         </div>
@@ -97,26 +126,33 @@ export function ChoresPage() {
     function refresh() { setList(chores.list()); }
     useEffect(refresh, []);
 
+    const done  = list.filter((c) => c.isCompletedThisCycle).length;
+    const total = list.length;
+
     return (
         <div>
-            <div className="px-4 pt-4 pb-2 border-b border-neutral-800 flex items-center justify-between">
-                <span className="text-green-400 font-bold tracking-widest text-sm">&gt; CHORES</span>
-                <span className="text-[10px] text-neutral-500">
-                    {list.filter((c) => c.isCompletedThisCycle).length}/{list.length} DONE
-                </span>
+            <div className="page-header">
+                <span className="page-title">&gt; CHORES</span>
+                {total > 0 && (
+                    <span className="label">{done}/{total} DONE</span>
+                )}
             </div>
 
             <AddBar onAdd={(n, f, d) => { chores.add(n, f, d); refresh(); }} />
 
             {list.length === 0 ? (
-                <div className="px-4 py-8 text-center text-neutral-600 text-sm">No chores yet.</div>
+                <div className="empty-state">
+                    <div className="empty-state-icon">↻</div>
+                    <div className="empty-state-title">NO CHORES</div>
+                    <div className="empty-state-hint">Add recurring tasks to track them</div>
+                </div>
             ) : (
                 list.map((item) => (
                     <ChoreRow
                         key={item.id}
                         item={item}
-                        onComplete={(id) => { chores.complete(id); refresh(); }}
-                        onDelete={(id) => { chores.remove(id); refresh(); }}
+                        onComplete={() => { chores.complete(item.id); refresh(); }}
+                        onDelete={() => { chores.remove(item.id); refresh(); }}
                     />
                 ))
             )}

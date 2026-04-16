@@ -4,114 +4,100 @@ import type { TodoItem, Priority } from "../lib/db";
 
 const PRIORITIES: Priority[] = ["high", "medium", "low"];
 const priorityColor: Record<Priority, string> = {
-    high: "text-red-400",
-    medium: "text-yellow-400",
-    low: "text-neutral-500",
+    high:   "#f87171",
+    medium: "#fbbf24",
+    low:    "#525252",
+};
+const priorityLabel: Record<Priority, string> = {
+    high: "!", medium: "~", low: "·",
 };
 
-function AddBar({ onAdd }: { onAdd: (title: string, priority: Priority) => void }) {
-    const [open, setOpen] = useState(false);
-    const [title, setTitle] = useState("");
+function AddBar({ onAdd }: { onAdd: (title: string, priority: Priority, dueDate?: string) => void }) {
+    const [open,     setOpen]     = useState(false);
+    const [title,    setTitle]    = useState("");
     const [priority, setPriority] = useState<Priority>("medium");
+    const [dueDate,  setDueDate]  = useState("");
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
 
     function submit() {
         if (!title.trim()) return;
-        onAdd(title.trim(), priority);
-        setTitle("");
-        setPriority("medium");
-        setOpen(false);
+        onAdd(title.trim(), priority, dueDate || undefined);
+        setTitle(""); setPriority("medium"); setDueDate(""); setOpen(false);
     }
-
-    useEffect(() => {
-        if (open) inputRef.current?.focus();
-    }, [open]);
 
     if (!open) {
         return (
-            <button
-                onClick={() => setOpen(true)}
-                className="w-full border-b border-neutral-800 px-4 py-3 text-left text-sm text-green-400 tracking-wider active:bg-neutral-900"
-            >
+            <button onClick={() => setOpen(true)}
+                className="w-full border-b border-[var(--color-border)] px-4 py-3 text-left text-xs tracking-widest active:bg-neutral-900"
+                style={{ color: "var(--color-accent)" }}>
                 + ADD TODO
             </button>
         );
     }
 
     return (
-        <div className="border-b border-neutral-800 bg-[#111] p-3 flex flex-col gap-2">
-            <input
-                ref={inputRef}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+        <div className="border-b border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col gap-2">
+            <input ref={inputRef} value={title} onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submit()}
                 placeholder="Task title..."
-                className="bg-[#0a0a0a] border border-neutral-700 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-600 w-full"
-            />
-            <div className="flex gap-2">
+                className="input-field" />
+            <div className="flex gap-1.5">
                 {PRIORITIES.map((p) => (
-                    <button
-                        key={p}
-                        onClick={() => setPriority(p)}
-                        className={`flex-1 py-1 text-xs tracking-wider border transition-colors ${
-                            priority === p
-                                ? "border-green-400 text-green-400"
-                                : "border-neutral-700 text-neutral-500"
-                        }`}
-                    >
+                    <button key={p} onClick={() => setPriority(p)}
+                        className="flex-1 py-1.5 text-[10px] tracking-wider border transition-colors"
+                        style={{
+                            borderColor: priority === p ? priorityColor[p] : "var(--color-border)",
+                            color: priority === p ? priorityColor[p] : "var(--color-muted)",
+                        }}>
                         {p.toUpperCase()}
                     </button>
                 ))}
             </div>
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+                className="input-field text-xs" />
             <div className="flex gap-2">
-                <button onClick={submit} className="flex-1 py-2 bg-green-400 text-black text-xs font-bold tracking-wider">SAVE</button>
-                <button onClick={() => setOpen(false)} className="flex-1 py-2 border border-neutral-700 text-neutral-400 text-xs tracking-wider">CANCEL</button>
+                <button onClick={submit} className="btn-primary flex-1">SAVE</button>
+                <button onClick={() => setOpen(false)} className="btn-ghost flex-1">CANCEL</button>
             </div>
         </div>
     );
 }
 
 function TodoRow({ item, onToggle, onDelete }: {
-    item: TodoItem;
-    onToggle: (id: string) => void;
-    onDelete: (id: string) => void;
+    item: TodoItem; onToggle: () => void; onDelete: () => void;
 }) {
     const [expanded, setExpanded] = useState(false);
 
     return (
-        <div className="border-b border-neutral-800 last:border-0">
-            <div
-                className="flex items-center gap-3 px-4 py-3 active:bg-neutral-900"
-                onClick={() => setExpanded((v) => !v)}
-            >
+        <div className="border-b border-[var(--color-border)] last:border-0">
+            <div className="list-row" onClick={() => setExpanded((v) => !v)}>
                 <button
-                    onClick={(e) => { e.stopPropagation(); onToggle(item.id); }}
-                    className={`w-4 h-4 shrink-0 border flex items-center justify-center text-[10px] ${
-                        item.isCompleted ? "border-green-400 text-green-400" : "border-neutral-600"
-                    }`}
+                    onClick={(e) => { e.stopPropagation(); onToggle(); }}
+                    className={`checkbox ${item.isCompleted ? "checked" : ""}`}
                 >
                     {item.isCompleted ? "✓" : ""}
                 </button>
-                <span className={`flex-1 text-sm truncate ${item.isCompleted ? "line-through text-neutral-600" : "text-neutral-200"}`}>
+                <span className={`flex-1 text-sm truncate ${item.isCompleted ? "line-through text-[var(--color-muted)]" : ""}`}>
                     {item.title}
                 </span>
-                <span className={`text-[10px] shrink-0 ${priorityColor[item.priority]}`}>
-                    {item.priority.toUpperCase()}
+                {item.dueDate && !item.isCompleted && (
+                    <span className="text-[9px] text-[var(--color-muted)] shrink-0 mr-1">
+                        {new Date(item.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                )}
+                <span className="text-sm font-bold shrink-0" style={{ color: priorityColor[item.priority] }}>
+                    {priorityLabel[item.priority]}
                 </span>
             </div>
             {expanded && (
-                <div className="px-4 pb-3 flex gap-2 bg-[#111]">
-                    {item.dueDate && (
-                        <span className="text-[10px] text-neutral-500 mr-auto">
-                            DUE {new Date(item.dueDate).toLocaleDateString()}
-                        </span>
-                    )}
-                    <button
-                        onClick={() => onDelete(item.id)}
-                        className="text-[10px] text-red-400 tracking-wider"
-                    >
-                        DELETE
-                    </button>
+                <div className="px-4 pb-3 bg-[var(--color-surface)] flex gap-3 items-center">
+                    <span className="text-[9px] text-[var(--color-muted)] flex-1 tracking-wider">
+                        {item.priority.toUpperCase()} PRIORITY
+                        {item.dueDate && ` · DUE ${new Date(item.dueDate).toLocaleDateString()}`}
+                    </span>
+                    <button onClick={onDelete} className="text-[10px] text-red-400 tracking-wider">DELETE</button>
                 </div>
             )}
         </div>
@@ -124,47 +110,43 @@ export function TodosPage() {
     function refresh() { setList(todos.list()); }
     useEffect(refresh, []);
 
-    function handleAdd(title: string, priority: Priority) {
-        todos.add(title, priority);
-        refresh();
-    }
-
-    function handleToggle(id: string) {
-        todos.toggle(id);
-        refresh();
-    }
-
-    function handleDelete(id: string) {
-        todos.remove(id);
-        refresh();
-    }
-
-    function handleClearCompleted() {
-        todos.clearCompleted();
-        refresh();
-    }
-
     const hasCompleted = list.some((t) => t.isCompleted);
+    const pending = list.filter((t) => !t.isCompleted).length;
 
     return (
         <div>
-            <div className="px-4 pt-4 pb-2 border-b border-neutral-800 flex items-center justify-between">
-                <span className="text-green-400 font-bold tracking-widest text-sm">&gt; TODOS</span>
-                {hasCompleted && (
-                    <button onClick={handleClearCompleted} className="text-[10px] text-neutral-500 tracking-wider">
-                        CLEAR DONE
-                    </button>
-                )}
-            </div>
-            <AddBar onAdd={handleAdd} />
-            {list.length === 0 ? (
-                <div className="px-4 py-8 text-center text-neutral-600 text-sm">No todos yet.</div>
-            ) : (
-                <div>
-                    {list.map((item) => (
-                        <TodoRow key={item.id} item={item} onToggle={handleToggle} onDelete={handleDelete} />
-                    ))}
+            <div className="page-header">
+                <span className="page-title">&gt; TODOS</span>
+                <div className="flex items-center gap-3">
+                    {list.length > 0 && (
+                        <span className="label">{pending}/{list.length}</span>
+                    )}
+                    {hasCompleted && (
+                        <button onClick={() => { todos.clearCompleted(); refresh(); }}
+                            className="text-[10px] text-[var(--color-muted)] tracking-wider active:text-red-400">
+                            CLEAR DONE
+                        </button>
+                    )}
                 </div>
+            </div>
+
+            <AddBar onAdd={(t, p, d) => { todos.add(t, p, d); refresh(); }} />
+
+            {list.length === 0 ? (
+                <div className="empty-state">
+                    <div className="empty-state-icon">✓</div>
+                    <div className="empty-state-title">NO TODOS</div>
+                    <div className="empty-state-hint">Tap + ADD TODO to get started</div>
+                </div>
+            ) : (
+                list.map((item) => (
+                    <TodoRow
+                        key={item.id}
+                        item={item}
+                        onToggle={() => { todos.toggle(item.id); refresh(); }}
+                        onDelete={() => { todos.remove(item.id); refresh(); }}
+                    />
+                ))
             )}
         </div>
     );

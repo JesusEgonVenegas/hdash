@@ -19,6 +19,7 @@ export interface GroceryItem {
     id: string;
     name: string;
     quantity: number;
+    price?: number;
     isChecked: boolean;
     category?: string;
     createdAt: string;
@@ -56,6 +57,28 @@ export interface Debt {
     createdAt: string;
 }
 
+export type NoteColor = "default" | "green" | "cyan" | "orange" | "pink" | "purple" | "amber";
+
+export interface Note {
+    id: string;
+    title: string;
+    content: string;
+    color: NoteColor;
+    pinned: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface BudgetCategory {
+    id: string;
+    name: string;
+    limit: number;
+    spent: number;
+    month: string; // "YYYY-MM"
+    emoji?: string;
+    createdAt: string;
+}
+
 export interface HdashExport {
     exportedAt: string;
     version: 1;
@@ -64,6 +87,8 @@ export interface HdashExport {
     chores: ChoreItem[];
     calendar: CalendarEvent[];
     debts: Debt[];
+    notes: Note[];
+    budget: BudgetCategory[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -159,8 +184,8 @@ export const grocery = {
         );
     },
 
-    add(name: string, quantity: number = 1, category?: string): GroceryItem {
-        const item: GroceryItem = { id: uid(), name, quantity, isChecked: false, category, createdAt: now() };
+    add(name: string, quantity: number = 1, category?: string, price?: number): GroceryItem {
+        const item: GroceryItem = { id: uid(), name, quantity, price, isChecked: false, category, createdAt: now() };
         const all = load<GroceryItem>("grocery");
         all.unshift(item);
         save("grocery", all);
@@ -310,6 +335,90 @@ export const debts = {
     },
 };
 
+// ─── Notes ───────────────────────────────────────────────────────────────────
+
+export const notes = {
+    list(): Note[] {
+        return load<Note>("notes").sort((a, b) => {
+            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+        });
+    },
+
+    add(title: string, content: string, color: NoteColor = "default"): Note {
+        const item: Note = { id: uid(), title, content, color, pinned: false, createdAt: now(), updatedAt: now() };
+        const all = load<Note>("notes");
+        all.unshift(item);
+        save("notes", all);
+        return item;
+    },
+
+    update(id: string, patch: Partial<Pick<Note, "title" | "content" | "color" | "pinned">>): Note {
+        const all = load<Note>("notes");
+        const idx = all.findIndex((n) => n.id === id);
+        if (idx === -1) throw new Error("Note not found");
+        all[idx] = { ...all[idx], ...patch, updatedAt: now() };
+        save("notes", all);
+        return all[idx];
+    },
+
+    remove(id: string): void {
+        save("notes", load<Note>("notes").filter((n) => n.id !== id));
+    },
+};
+
+// ─── Budget ──────────────────────────────────────────────────────────────────
+
+function currentMonth(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export const budget = {
+    listMonth(month: string = currentMonth()): BudgetCategory[] {
+        return load<BudgetCategory>("budget")
+            .filter((b) => b.month === month)
+            .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    },
+
+    add(name: string, limit: number, emoji?: string, month: string = currentMonth()): BudgetCategory {
+        const item: BudgetCategory = { id: uid(), name, limit, spent: 0, month, emoji, createdAt: now() };
+        const all = load<BudgetCategory>("budget");
+        all.push(item);
+        save("budget", all);
+        return item;
+    },
+
+    addSpending(id: string, amount: number): BudgetCategory {
+        const all = load<BudgetCategory>("budget");
+        const idx = all.findIndex((b) => b.id === id);
+        if (idx === -1) throw new Error("Category not found");
+        all[idx] = { ...all[idx], spent: all[idx].spent + amount };
+        save("budget", all);
+        return all[idx];
+    },
+
+    update(id: string, patch: Partial<Pick<BudgetCategory, "name" | "limit" | "spent" | "emoji">>): BudgetCategory {
+        const all = load<BudgetCategory>("budget");
+        const idx = all.findIndex((b) => b.id === id);
+        if (idx === -1) throw new Error("Category not found");
+        all[idx] = { ...all[idx], ...patch };
+        save("budget", all);
+        return all[idx];
+    },
+
+    remove(id: string): void {
+        save("budget", load<BudgetCategory>("budget").filter((b) => b.id !== id));
+    },
+
+    copyToMonth(sourceMonth: string, targetMonth: string): void {
+        const source = load<BudgetCategory>("budget").filter((b) => b.month === sourceMonth);
+        const copies = source.map((b) => ({ ...b, id: uid(), month: targetMonth, spent: 0, createdAt: now() }));
+        const all = load<BudgetCategory>("budget");
+        save("budget", [...all, ...copies]);
+    },
+};
+
 // ─── Export / Import ─────────────────────────────────────────────────────────
 
 export function exportData(): HdashExport {
@@ -321,20 +430,24 @@ export function exportData(): HdashExport {
         chores: load<ChoreItem>("chores"),
         calendar: load<CalendarEvent>("calendar"),
         debts: load<Debt>("debts"),
+        notes: load<Note>("notes"),
+        budget: load<BudgetCategory>("budget"),
     };
 }
 
 export function importData(data: HdashExport): void {
     if (data.version !== 1) throw new Error("Unsupported export version");
-    save("todos", data.todos ?? []);
-    save("grocery", data.grocery ?? []);
-    save("chores", data.chores ?? []);
+    save("todos",    data.todos    ?? []);
+    save("grocery",  data.grocery  ?? []);
+    save("chores",   data.chores   ?? []);
     save("calendar", data.calendar ?? []);
-    save("debts", data.debts ?? []);
+    save("debts",    data.debts    ?? []);
+    save("notes",    data.notes    ?? []);
+    save("budget",   data.budget   ?? []);
 }
 
 export function clearAllData(): void {
-    ["todos", "grocery", "chores", "calendar", "debts"].forEach((k) =>
+    ["todos", "grocery", "chores", "calendar", "debts", "notes", "budget"].forEach((k) =>
         localStorage.removeItem(`hdash_${k}`)
     );
 }

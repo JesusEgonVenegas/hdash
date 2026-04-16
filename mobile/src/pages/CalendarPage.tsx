@@ -2,53 +2,80 @@ import { useState, useEffect } from "react";
 import { calendar } from "../lib/db";
 import type { CalendarEvent, EventColor } from "../lib/db";
 
-const COLORS: EventColor[] = ["green", "blue", "red", "yellow", "purple"];
-const colorDot: Record<EventColor, string> = {
-    green: "bg-green-400",
-    blue: "bg-blue-400",
-    red: "bg-red-400",
+const EVENT_COLORS: EventColor[] = ["green", "blue", "red", "yellow", "purple"];
+const dotStyle: Record<EventColor, string> = {
+    green:  "background:#4ade80",
+    blue:   "background:#60a5fa",
+    red:    "background:#f87171",
+    yellow: "background:#fbbf24",
+    purple: "background:#a78bfa",
+};
+const dotClass: Record<EventColor, string> = {
+    green:  "bg-green-400",
+    blue:   "bg-blue-400",
+    red:    "bg-red-400",
     yellow: "bg-yellow-400",
     purple: "bg-purple-400",
 };
 
 function pad(n: number) { return String(n).padStart(2, "0"); }
 
-function CalendarGrid({
-    year, month, events, onDayPress
-}: {
+function CalendarGrid({ year, month, events, onDayPress, selectedDay }: {
     year: number; month: number;
     events: CalendarEvent[];
     onDayPress: (dateStr: string) => void;
+    selectedDay: string | null;
 }) {
-    const firstDay = new Date(year, month - 1, 1).getDay();
+    const firstDay    = new Date(year, month - 1, 1).getDay();
     const daysInMonth = new Date(year, month, 0).getDate();
-    const today = new Date();
+    const today       = new Date();
 
-    const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+    const cells: (number | null)[] = [
+        ...Array(firstDay).fill(null),
+        ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    ];
     while (cells.length % 7 !== 0) cells.push(null);
 
-    const eventDays = new Set(
-        events.map((e) => new Date(e.startDate).getDate())
-    );
+    const eventsByDay = events.reduce<Record<number, EventColor[]>>((acc, e) => {
+        const d = new Date(e.startDate).getDate();
+        (acc[d] ??= []).push(e.color);
+        return acc;
+    }, {});
 
     return (
-        <div>
-            <div className="grid grid-cols-7 border-b border-neutral-800">
+        <div className="border-b border-[var(--color-border)]">
+            {/* day labels */}
+            <div className="grid grid-cols-7">
                 {["S","M","T","W","T","F","S"].map((d, i) => (
-                    <div key={i} className="text-center py-1 text-[10px] text-neutral-600">{d}</div>
+                    <div key={i} className="text-center py-1.5 label text-[9px]">{d}</div>
                 ))}
             </div>
+            {/* cells */}
             <div className="grid grid-cols-7">
                 {cells.map((day, i) => {
-                    if (!day) return <div key={i} className="h-10" />;
-                    const isToday = day === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear();
-                    const hasEvent = eventDays.has(day);
-                    const dateStr = `${year}-${pad(month)}-${pad(day)}`;
+                    if (!day) return <div key={i} className="h-11" />;
+                    const isToday    = day === today.getDate() && month === today.getMonth() + 1 && year === today.getFullYear();
+                    const dateStr    = `${year}-${pad(month)}-${pad(day)}`;
+                    const isSelected = dateStr === selectedDay;
+                    const evColors   = eventsByDay[day] ?? [];
+
                     return (
                         <button key={i} onClick={() => onDayPress(dateStr)}
-                            className={`h-10 flex flex-col items-center justify-center gap-0.5 text-sm ${isToday ? "text-green-400 font-bold" : "text-neutral-300"} active:bg-neutral-900`}>
-                            {day}
-                            {hasEvent && <div className="w-1 h-1 rounded-full bg-green-400" />}
+                            className="h-11 flex flex-col items-center justify-center gap-0.5 transition-colors active:opacity-60"
+                            style={{ background: isSelected ? "var(--color-accent-dim)" : undefined }}>
+                            <span
+                                className={`text-sm ${isToday ? "font-bold" : ""}`}
+                                style={{ color: isToday ? "var(--color-accent)" : isSelected ? "var(--color-accent)" : undefined }}
+                            >
+                                {day}
+                            </span>
+                            {evColors.length > 0 && (
+                                <div className="flex gap-0.5">
+                                    {evColors.slice(0, 3).map((c, ci) => (
+                                        <div key={ci} className={`w-1 h-1 rounded-full ${dotClass[c]}`} />
+                                    ))}
+                                </div>
+                            )}
                         </button>
                     );
                 })}
@@ -59,19 +86,19 @@ function CalendarGrid({
 
 export function CalendarPage() {
     const today = new Date();
-    const [year, setYear] = useState(today.getFullYear());
-    const [month, setMonth] = useState(today.getMonth() + 1);
-    const [events, setEvents] = useState<CalendarEvent[]>([]);
+    const [year,     setYear]     = useState(today.getFullYear());
+    const [month,    setMonth]    = useState(today.getMonth() + 1);
+    const [events,   setEvents]   = useState<CalendarEvent[]>([]);
     const [selected, setSelected] = useState<string | null>(null);
-    const [showAdd, setShowAdd] = useState(false);
+    const [showAdd,  setShowAdd]  = useState(false);
 
-    // Add form state
-    const [title, setTitle] = useState("");
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
-    const [desc, setDesc] = useState("");
-    const [color, setColor] = useState<EventColor>("green");
-    const [isAllDay, setIsAllDay] = useState(true);
+    // Add form
+    const [title,    setTitle]    = useState("");
+    const [startDate, setStart]   = useState("");
+    const [endDate,   setEnd]     = useState("");
+    const [desc,      setDesc]    = useState("");
+    const [color,     setColor]   = useState<EventColor>("green");
+    const [isAllDay,  setAllDay]  = useState(true);
 
     const monthKey = `${year}-${pad(month)}`;
 
@@ -91,106 +118,122 @@ export function CalendarPage() {
 
     function handleDayPress(dateStr: string) {
         setSelected(dateStr === selected ? null : dateStr);
-        setStartDate(dateStr);
+        setStart(dateStr);
         setShowAdd(false);
     }
 
     function handleAdd() {
         if (!title.trim() || !startDate) return;
         calendar.add({ title: title.trim(), startDate, endDate: endDate || undefined, description: desc || undefined, color, isAllDay });
-        setTitle(""); setDesc(""); setEndDate(""); setColor("green"); setIsAllDay(true);
+        setTitle(""); setDesc(""); setEnd(""); setColor("green"); setAllDay(true);
         setShowAdd(false);
         refresh();
     }
 
-    const selectedEvents = selected
-        ? events.filter((e) => e.startDate.startsWith(selected))
-        : [];
+    const selectedEvents = selected ? events.filter((e) => e.startDate.startsWith(selected)) : [];
 
     return (
         <div>
-            <div className="px-4 pt-4 pb-2 border-b border-neutral-800 flex items-center gap-2">
-                <button onClick={prevMonth} className="text-neutral-400 px-2 text-lg active:text-green-400">‹</button>
-                <span className="text-green-400 font-bold tracking-widest text-sm flex-1 text-center">
+            {/* header */}
+            <div className="page-header">
+                <button onClick={prevMonth} className="text-[var(--color-muted)] text-xl px-2 active:text-white">‹</button>
+                <span className="page-title">
                     {new Date(year, month - 1).toLocaleString("en-US", { month: "long", year: "numeric" }).toUpperCase()}
                 </span>
-                <button onClick={nextMonth} className="text-neutral-400 px-2 text-lg active:text-green-400">›</button>
+                <button onClick={nextMonth} className="text-[var(--color-muted)] text-xl px-2 active:text-white">›</button>
             </div>
 
-            <CalendarGrid year={year} month={month} events={events} onDayPress={handleDayPress} />
+            <CalendarGrid year={year} month={month} events={events} onDayPress={handleDayPress} selectedDay={selected} />
 
-            {/* Selected day events */}
+            {/* selected day panel */}
             {selected && (
-                <div className="border-t border-neutral-800 mt-1">
-                    <div className="px-4 py-2 flex items-center justify-between">
-                        <span className="text-[10px] text-neutral-500 tracking-widest">
+                <div>
+                    <div className="px-4 py-2.5 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+                        <span className="label">
                             {new Date(selected + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }).toUpperCase()}
                         </span>
-                        <button onClick={() => setShowAdd(true)} className="text-[10px] text-green-400 tracking-wider">+ ADD</button>
+                        <button onClick={() => setShowAdd(true)} className="text-[10px] tracking-widest" style={{ color: "var(--color-accent)" }}>
+                            + ADD
+                        </button>
                     </div>
+
                     {selectedEvents.length === 0 ? (
-                        <div className="px-4 pb-3 text-neutral-600 text-xs">No events.</div>
+                        <div className="px-4 py-3 text-[10px] text-[var(--color-muted)]">No events on this day.</div>
                     ) : (
                         selectedEvents.map((e) => (
-                            <div key={e.id} className="flex items-center gap-3 px-4 py-2 border-t border-neutral-800">
-                                <div className={`w-2 h-2 shrink-0 rounded-full ${colorDot[e.color]}`} />
+                            <div key={e.id} className="list-row">
+                                <div className={`w-2.5 h-2.5 shrink-0 rounded-full ${dotClass[e.color]}`} />
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-sm text-neutral-200">{e.title}</div>
-                                    {e.description && <div className="text-[10px] text-neutral-600">{e.description}</div>}
+                                    <div className="text-sm">{e.title}</div>
+                                    {e.description && <div className="label mt-0.5 normal-case">{e.description}</div>}
                                 </div>
-                                <button onClick={() => { calendar.remove(e.id); refresh(); }} className="text-neutral-700 active:text-red-400 px-1">×</button>
+                                <button onClick={() => { calendar.remove(e.id); refresh(); }}
+                                    className="text-[var(--color-border)] text-lg px-1 active:text-red-400">×</button>
                             </div>
                         ))
                     )}
                 </div>
             )}
 
-            {/* Add event form */}
+            {/* Add form */}
             {showAdd && (
-                <div className="border-t border-neutral-800 bg-[#111] p-3 flex flex-col gap-2">
-                    <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title..."
-                        className="bg-[#0a0a0a] border border-neutral-700 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-600 w-full" />
+                <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] p-3 flex flex-col gap-2">
+                    <input value={title} onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Event title..."
+                        className="input-field" />
                     <div className="flex gap-2">
-                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                            className="bg-[#0a0a0a] border border-neutral-700 px-2 py-2 text-sm text-neutral-200 flex-1 [color-scheme:dark]" />
-                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                            className="bg-[#0a0a0a] border border-neutral-700 px-2 py-2 text-sm text-neutral-200 flex-1 [color-scheme:dark]" />
+                        <input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="input-field flex-1" />
+                        <input type="date" value={endDate}   onChange={(e) => setEnd(e.target.value)}   className="input-field flex-1" />
                     </div>
-                    <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Description (optional)"
-                        className="bg-[#0a0a0a] border border-neutral-700 px-3 py-2 text-sm text-neutral-200 placeholder-neutral-600 w-full" />
-                    <div className="flex gap-2">
-                        {COLORS.map((c) => (
-                            <button key={c} onClick={() => setColor(c)}
-                                className={`w-7 h-7 rounded-full ${colorDot[c]} ${color === c ? "ring-2 ring-white ring-offset-1 ring-offset-[#111]" : "opacity-60"}`} />
-                        ))}
-                        <label className="ml-auto flex items-center gap-1 text-[10px] text-neutral-500">
-                            <input type="checkbox" checked={isAllDay} onChange={(e) => setIsAllDay(e.target.checked)} className="accent-green-400" />
+                    <input value={desc} onChange={(e) => setDesc(e.target.value)}
+                        placeholder="Description (optional)"
+                        className="input-field" />
+                    <div className="flex items-center gap-3">
+                        <div className="flex gap-2">
+                            {EVENT_COLORS.map((c) => (
+                                <button key={c} onClick={() => setColor(c)}
+                                    className={`w-7 h-7 rounded-full transition-all ${dotClass[c]} ${color === c ? "ring-2 ring-white ring-offset-1 ring-offset-[var(--color-surface)]" : "opacity-50"}`} />
+                            ))}
+                        </div>
+                        <label className="ml-auto flex items-center gap-1.5 text-[10px] text-[var(--color-muted)] cursor-pointer">
+                            <input type="checkbox" checked={isAllDay} onChange={(e) => setAllDay(e.target.checked)} className="accent-[var(--color-accent)]" />
                             ALL DAY
                         </label>
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={handleAdd} className="flex-1 py-2 bg-green-400 text-black text-xs font-bold tracking-wider">SAVE</button>
-                        <button onClick={() => setShowAdd(false)} className="flex-1 py-2 border border-neutral-700 text-neutral-400 text-xs tracking-wider">CANCEL</button>
+                        <button onClick={handleAdd}            className="btn-primary flex-1">SAVE</button>
+                        <button onClick={() => setShowAdd(false)} className="btn-ghost flex-1">CANCEL</button>
                     </div>
                 </div>
             )}
 
-            {/* All events list when nothing selected */}
+            {/* All events list when no day selected */}
             {!selected && events.length > 0 && (
-                <div className="border-t border-neutral-800 mt-1">
-                    <div className="px-4 py-2 text-[10px] text-neutral-500 tracking-widest">THIS MONTH</div>
+                <div>
+                    <div className="px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+                        <span className="label">THIS MONTH ({events.length})</span>
+                    </div>
                     {events.map((e) => (
-                        <div key={e.id} className="flex items-center gap-3 px-4 py-2 border-t border-neutral-800">
-                            <div className={`w-2 h-2 shrink-0 rounded-full ${colorDot[e.color]}`} />
+                        <div key={e.id} className="list-row">
+                            <div className={`w-2.5 h-2.5 shrink-0 rounded-full ${dotClass[e.color]}`} />
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm text-neutral-200 truncate">{e.title}</div>
-                                <div className="text-[10px] text-neutral-600">
+                                <div className="text-sm truncate">{e.title}</div>
+                                <div className="label mt-0.5">
                                     {new Date(e.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                                 </div>
                             </div>
-                            <button onClick={() => { calendar.remove(e.id); refresh(); }} className="text-neutral-700 active:text-red-400 px-1">×</button>
+                            <button onClick={() => { calendar.remove(e.id); refresh(); }}
+                                className="text-[var(--color-border)] text-lg px-1 active:text-red-400">×</button>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {!selected && events.length === 0 && (
+                <div className="empty-state">
+                    <div className="empty-state-icon">📅</div>
+                    <div className="empty-state-title">NO EVENTS</div>
+                    <div className="empty-state-hint">Tap a day to add an event</div>
                 </div>
             )}
         </div>
