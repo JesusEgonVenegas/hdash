@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { todos } from "../lib/db";
 import type { TodoItem, Priority } from "../lib/db";
 import { hapticSuccess, hapticLight } from "../lib/haptics";
+import { members as membersDb } from "../lib/db";
+import type { Member } from "../lib/db";
+import { Avatar } from "../components/Avatar";
 
 const PRIORITIES: Priority[] = ["high", "medium", "low"];
 const priorityColor: Record<Priority, string> = {
@@ -13,19 +16,21 @@ const priorityLabel: Record<Priority, string> = {
     high: "!", medium: "~", low: "·",
 };
 
-function AddBar({ onAdd }: { onAdd: (title: string, priority: Priority, dueDate?: string) => void }) {
-    const [open,     setOpen]     = useState(false);
-    const [title,    setTitle]    = useState("");
-    const [priority, setPriority] = useState<Priority>("medium");
-    const [dueDate,  setDueDate]  = useState("");
+function AddBar({ onAdd }: { onAdd: (title: string, priority: Priority, dueDate?: string, assigneeId?: string) => void }) {
+    const [open,       setOpen]      = useState(false);
+    const [title,      setTitle]     = useState("");
+    const [priority,   setPriority]  = useState<Priority>("medium");
+    const [dueDate,    setDueDate]   = useState("");
+    const [assigneeId, setAssigneeId] = useState<string | undefined>();
+    const [memberList, setMemberList] = useState<Member[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
+    useEffect(() => { if (open) { inputRef.current?.focus(); setMemberList(membersDb.list()); } }, [open]);
 
     function submit() {
         if (!title.trim()) return;
-        onAdd(title.trim(), priority, dueDate || undefined);
-        setTitle(""); setPriority("medium"); setDueDate(""); setOpen(false);
+        onAdd(title.trim(), priority, dueDate || undefined, assigneeId);
+        setTitle(""); setPriority("medium"); setDueDate(""); setAssigneeId(undefined); setOpen(false);
     }
 
     if (!open) {
@@ -58,6 +63,28 @@ function AddBar({ onAdd }: { onAdd: (title: string, priority: Priority, dueDate?
             </div>
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
                 className="input-field text-xs" />
+            {memberList.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={() => setAssigneeId(undefined)}
+                        className={`text-[10px] tracking-wider px-2 py-1 border transition-colors ${!assigneeId ? "border-[var(--color-accent)] text-[var(--color-accent)]" : "border-[var(--color-border)] text-[var(--color-muted)]"}`}
+                    >
+                        ANYONE
+                    </button>
+                    {memberList.map((m) => (
+                        <button key={m.id}
+                            onClick={() => setAssigneeId(m.id)}
+                            className="flex items-center gap-1.5 text-[10px] tracking-wider px-2 py-1 border transition-colors"
+                            style={{
+                                borderColor: assigneeId === m.id ? m.color : "var(--color-border)",
+                                color: assigneeId === m.id ? m.color : "var(--color-muted)",
+                            }}
+                        >
+                            {m.avatar} {m.name}
+                        </button>
+                    ))}
+                </div>
+            )}
             <div className="flex gap-2">
                 <button onClick={submit} className="btn-primary flex-1">SAVE</button>
                 <button onClick={() => setOpen(false)} className="btn-ghost flex-1">CANCEL</button>
@@ -66,10 +93,11 @@ function AddBar({ onAdd }: { onAdd: (title: string, priority: Priority, dueDate?
     );
 }
 
-function TodoRow({ item, onToggle, onDelete }: {
-    item: TodoItem; onToggle: () => void; onDelete: () => void;
+function TodoRow({ item, onToggle, onDelete, memberList }: {
+    item: TodoItem; onToggle: () => void; onDelete: () => void; memberList: Member[];
 }) {
     const [expanded, setExpanded] = useState(false);
+    const assignee = item.assigneeId ? memberList.find((m) => m.id === item.assigneeId) : null;
 
     return (
         <div className="border-b border-[var(--color-border)] last:border-0">
@@ -88,6 +116,7 @@ function TodoRow({ item, onToggle, onDelete }: {
                         {new Date(item.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                 )}
+                {assignee && <Avatar member={assignee} size="sm" className="shrink-0" />}
                 <span className="text-sm font-bold shrink-0" style={{ color: priorityColor[item.priority] }}>
                     {priorityLabel[item.priority]}
                 </span>
@@ -106,9 +135,10 @@ function TodoRow({ item, onToggle, onDelete }: {
 }
 
 export function TodosPage() {
-    const [list, setList] = useState<TodoItem[]>([]);
+    const [list,       setList]       = useState<TodoItem[]>([]);
+    const [memberList, setMemberList] = useState<Member[]>([]);
 
-    function refresh() { setList(todos.list()); }
+    function refresh() { setList(todos.list()); setMemberList(membersDb.list()); }
     useEffect(refresh, []);
 
     const hasCompleted = list.some((t) => t.isCompleted);
@@ -131,7 +161,7 @@ export function TodosPage() {
                 </div>
             </div>
 
-            <AddBar onAdd={(t, p, d) => { todos.add(t, p, d); refresh(); }} />
+            <AddBar onAdd={(t, p, d, a) => { todos.add(t, p, d, a); refresh(); }} />
 
             {list.length === 0 ? (
                 <div className="empty-state">
@@ -144,6 +174,7 @@ export function TodosPage() {
                     <TodoRow
                         key={item.id}
                         item={item}
+                        memberList={memberList}
                         onToggle={() => { hapticSuccess(); todos.toggle(item.id); refresh(); }}
                         onDelete={() => { hapticLight(); todos.remove(item.id); refresh(); }}
                     />

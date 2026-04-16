@@ -11,6 +11,7 @@ export interface TodoItem {
     priority: Priority;
     isCompleted: boolean;
     dueDate?: string;
+    assigneeId?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -33,6 +34,7 @@ export interface ChoreItem {
     isCompletedThisCycle: boolean;
     nextDueDate: string;
     lastCompletedAt?: string;
+    assigneeId?: string;
     createdAt: string;
 }
 
@@ -79,6 +81,14 @@ export interface BudgetCategory {
     createdAt: string;
 }
 
+export interface Member {
+    id: string;
+    name: string;
+    avatar: string; // 1-2 char initials or emoji
+    color: string;  // hex
+    createdAt: string;
+}
+
 export interface HdashExport {
     exportedAt: string;
     version: 1;
@@ -89,6 +99,7 @@ export interface HdashExport {
     debts: Debt[];
     notes: Note[];
     budget: BudgetCategory[];
+    members: Member[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -137,10 +148,10 @@ export const todos = {
         });
     },
 
-    add(title: string, priority: Priority = "medium", dueDate?: string): TodoItem {
+    add(title: string, priority: Priority = "medium", dueDate?: string, assigneeId?: string): TodoItem {
         const item: TodoItem = {
             id: uid(), title, priority, isCompleted: false,
-            dueDate, createdAt: now(), updatedAt: now(),
+            dueDate, assigneeId, createdAt: now(), updatedAt: now(),
         };
         const all = load<TodoItem>("todos");
         all.unshift(item);
@@ -148,7 +159,7 @@ export const todos = {
         return item;
     },
 
-    update(id: string, patch: Partial<Pick<TodoItem, "title" | "priority" | "dueDate" | "isCompleted">>): TodoItem {
+    update(id: string, patch: Partial<Pick<TodoItem, "title" | "priority" | "dueDate" | "isCompleted" | "assigneeId">>): TodoItem {
         const all = load<TodoItem>("todos");
         const idx = all.findIndex((t) => t.id === id);
         if (idx === -1) throw new Error("Todo not found");
@@ -421,17 +432,60 @@ export const budget = {
 
 // ─── Export / Import ─────────────────────────────────────────────────────────
 
+// ─── Members ─────────────────────────────────────────────────────────────────
+
+const MEMBER_COLORS = ["#4ade80","#22d3ee","#fb923c","#f472b6","#a78bfa","#fbbf24","#f87171","#34d399"];
+
+export const members = {
+    list(): Member[] {
+        return load<Member>("members").sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+    },
+
+    add(name: string): Member {
+        const all = load<Member>("members");
+        const color = MEMBER_COLORS[all.length % MEMBER_COLORS.length];
+        const avatar = name.trim().slice(0, 2).toUpperCase();
+        const item: Member = { id: uid(), name: name.trim(), avatar, color, createdAt: now() };
+        all.push(item);
+        save("members", all);
+        return item;
+    },
+
+    update(id: string, patch: Partial<Pick<Member, "name" | "avatar" | "color">>): Member {
+        const all = load<Member>("members");
+        const idx = all.findIndex((m) => m.id === id);
+        if (idx === -1) throw new Error("Member not found");
+        all[idx] = { ...all[idx], ...patch };
+        save("members", all);
+        return all[idx];
+    },
+
+    remove(id: string): void {
+        save("members", load<Member>("members").filter((m) => m.id !== id));
+        // unassign from todos and chores
+        const ts = load<TodoItem>("todos").map((t) => t.assigneeId === id ? { ...t, assigneeId: undefined } : t);
+        save("todos", ts);
+        const cs = load<ChoreItem>("chores").map((c) => c.assigneeId === id ? { ...c, assigneeId: undefined } : c);
+        save("chores", cs);
+    },
+};
+
+// ─── Export / Import ─────────────────────────────────────────────────────────
+
 export function exportData(): HdashExport {
     return {
         exportedAt: now(),
         version: 1,
-        todos: load<TodoItem>("todos"),
-        grocery: load<GroceryItem>("grocery"),
-        chores: load<ChoreItem>("chores"),
+        todos:    load<TodoItem>("todos"),
+        grocery:  load<GroceryItem>("grocery"),
+        chores:   load<ChoreItem>("chores"),
         calendar: load<CalendarEvent>("calendar"),
-        debts: load<Debt>("debts"),
-        notes: load<Note>("notes"),
-        budget: load<BudgetCategory>("budget"),
+        debts:    load<Debt>("debts"),
+        notes:    load<Note>("notes"),
+        budget:   load<BudgetCategory>("budget"),
+        members:  load<Member>("members"),
     };
 }
 
@@ -444,10 +498,11 @@ export function importData(data: HdashExport): void {
     save("debts",    data.debts    ?? []);
     save("notes",    data.notes    ?? []);
     save("budget",   data.budget   ?? []);
+    save("members",  data.members  ?? []);
 }
 
 export function clearAllData(): void {
-    ["todos", "grocery", "chores", "calendar", "debts", "notes", "budget"].forEach((k) =>
+    ["todos", "grocery", "chores", "calendar", "debts", "notes", "budget", "members"].forEach((k) =>
         localStorage.removeItem(`hdash_${k}`)
     );
 }
