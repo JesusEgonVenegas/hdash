@@ -2,6 +2,7 @@ using System.Security.Claims;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Endpoints;
@@ -25,31 +26,13 @@ public static class PaymentEndpoints
         ClaimsPrincipal principal,
         int? limit)
     {
-        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return Results.Unauthorized();
+        var scope = await HouseholdScope.ResolveAsync(db, principal);
+        if (scope is null) return Results.Unauthorized();
 
-        IQueryable<Payment> query;
-
-        if (user.HouseholdId is not null)
-        {
-            var memberIds = await db.Users
-                .Where(u => u.HouseholdId == user.HouseholdId)
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            query = db.Payments
-                .Include(p => p.Debt)
-                .Where(p => memberIds.Contains(p.Debt.UserId))
-                .OrderByDescending(p => p.PaidAt);
-        }
-        else
-        {
-            query = db.Payments
-                .Include(p => p.Debt)
-                .Where(p => p.Debt.UserId == userId)
-                .OrderByDescending(p => p.PaidAt);
-        }
+        IQueryable<Payment> query = db.Payments
+            .Include(p => p.Debt)
+            .Where(p => scope.MemberIds.Contains(p.Debt.UserId))
+            .OrderByDescending(p => p.PaidAt);
 
         if (limit.HasValue)
             query = query.Take(limit.Value);
@@ -81,7 +64,13 @@ public static class PaymentEndpoints
         if (payment is null) return Results.NotFound();
         if (payment.Debt.UserId != userId) return Results.Forbid();
 
-        return Results.Ok(payment);
+        return Results.Ok(new
+        {
+            payment.Id,
+            payment.Amount,
+            payment.PaidAt,
+            payment.DebtId,
+        });
     }
 
     private static async Task<IResult> UpdatePayment(

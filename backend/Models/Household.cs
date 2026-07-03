@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace backend.Models;
 
 public class Household
@@ -12,10 +14,12 @@ public class Household
 
     public static string GenerateInviteCode()
     {
+        // Crypto-strong RNG so invite codes aren't guessable from timing/seed.
+        // Ambiguous characters (0/O, 1/I) are excluded for readability.
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        var random = new Random();
-        return new string(
-            Enumerable.Range(0, 6).Select(_ => chars[random.Next(chars.Length)]).ToArray()
-        );
+        var code = new char[6];
+        for (var i = 0; i < code.Length; i++)
+            code[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+        return new string(code);
     }
 }

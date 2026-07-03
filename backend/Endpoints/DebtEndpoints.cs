@@ -2,6 +2,7 @@ using System.Security.Claims;
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Endpoints;
@@ -36,46 +37,18 @@ public static class DebtEndpoints
         AppDbContext db,
         ClaimsPrincipal principal)
     {
-        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var scope = await HouseholdScope.ResolveAsync(db, principal);
+        if (scope is null) return Results.Unauthorized();
 
-        if (user is null) return Results.Unauthorized();
+        var debts = await db.Debts
+            .Where(d => scope.MemberIds.Contains(d.UserId))
+            .Include(d => d.User)
+            .Include(d => d.Payments)
+            .OrderBy(d => d.CreatedAt)
+            .ToListAsync();
 
-        IQueryable<Debt> query;
-
-        if (user.HouseholdId is not null)
-        {
-            var memberIds = await db.Users
-                .Where(u => u.HouseholdId == user.HouseholdId)
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            query = db.Debts
-                .Where(d => memberIds.Contains(d.UserId))
-                .Include(d => d.User);
-        }
-        else
-        {
-            query = db.Debts.Where(d => d.UserId == userId);
-        }
-
-        var debts = await query.OrderBy(d => d.CreatedAt).ToListAsync();
-
-        return Results.Ok(
-            debts.Select(d => new
-            {
-                d.Id,
-                d.Name,
-                d.StartingAmount,
-                d.InterestRate,
-                d.MinPayment,
-                d.DueDay,
-                d.CreatedAt,
-                d.UpdatedAt,
-                d.UserId,
-                UserName = d.User?.DisplayName,
-            })
-        );
+        var now = DateTime.UtcNow;
+        return Results.Ok(debts.Select(d => ToDebtDto(d, now)));
     }
 
     private static async Task<IResult> CreateDebt(
@@ -109,7 +82,7 @@ public static class DebtEndpoints
         db.Debts.Add(debt);
         await db.SaveChangesAsync();
 
-        return Results.Created($"/api/debts/{debt.Id}", debt);
+        return Results.Created($"/api/debts/{debt.Id}", ToDebtDto(debt, DateTime.UtcNow));
     }
 
     private static async Task<IResult> GetDebt(
@@ -117,26 +90,18 @@ public static class DebtEndpoints
         Guid id,
         ClaimsPrincipal principal)
     {
-        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var debt = await db.Debts.FindAsync(id);
+        var scope = await HouseholdScope.ResolveAsync(db, principal);
+        if (scope is null) return Results.Unauthorized();
+
+        var debt = await db.Debts
+            .Include(d => d.User)
+            .Include(d => d.Payments)
+            .FirstOrDefaultAsync(d => d.Id == id);
 
         if (debt is null) return Results.NotFound();
+        if (!scope.CanView(debt.UserId)) return Results.Forbid();
 
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return Results.Unauthorized();
-
-        if (user.HouseholdId is not null)
-        {
-            var debtOwner = await db.Users.FirstOrDefaultAsync(u => u.Id == debt.UserId);
-            if (debtOwner?.HouseholdId != user.HouseholdId)
-                return Results.Forbid();
-        }
-        else if (debt.UserId != userId)
-        {
-            return Results.Forbid();
-        }
-
-        return Results.Ok(debt);
+        return Results.Ok(ToDebtDto(debt, DateTime.UtcNow));
     }
 
     private static async Task<IResult> UpdateDebt(
@@ -168,8 +133,9 @@ public static class DebtEndpoints
         debt.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
+        await db.Entry(debt).Collection(d => d.Payments).LoadAsync();
 
-        return Results.Ok(debt);
+        return Results.Ok(ToDebtDto(debt, DateTime.UtcNow));
     }
 
     private static async Task<IResult> DeleteDebt(
@@ -226,62 +192,60 @@ public static class DebtEndpoints
         Guid debtId,
         ClaimsPrincipal principal)
     {
-        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return Results.Unauthorized();
+        var scope = await HouseholdScope.ResolveAsync(db, principal);
+        if (scope is null) return Results.Unauthorized();
 
         var debt = await db.Debts.FirstOrDefaultAsync(d => d.Id == debtId);
         if (debt is null) return Results.NotFound("Debt not found.");
-
-        // Allow household members to view each other's debt payments
-        if (user.HouseholdId is not null)
-        {
-            var debtOwner = await db.Users.FirstOrDefaultAsync(u => u.Id == debt.UserId);
-            if (debtOwner?.HouseholdId != user.HouseholdId)
-                return Results.Forbid();
-        }
-        else if (debt.UserId != userId)
-        {
-            return Results.Forbid();
-        }
+        if (!scope.CanView(debt.UserId)) return Results.Forbid();
 
         var payments = await db.Payments
             .Where(p => p.DebtId == debtId)
             .OrderByDescending(p => p.PaidAt)
+            .Select(p => new { p.Id, p.Amount, p.PaidAt, p.DebtId })
             .ToListAsync();
 
         return Results.Ok(payments);
+    }
+
+    // Projects a Debt to a safe, computed shape. Never exposes the User navigation
+    // (which EF may fix up to a full ApplicationUser, password hash included).
+    // Expects d.Payments to be loaded so the balance is authoritative; a brand-new
+    // debt with no payments is fine (balance == starting amount).
+    private static object ToDebtDto(Debt d, DateTime asOf)
+    {
+        var payments = d.Payments.Select(p => (p.PaidAt, p.Amount)).ToList();
+        return new
+        {
+            d.Id,
+            d.Name,
+            d.StartingAmount,
+            d.InterestRate,
+            d.MinPayment,
+            d.DueDay,
+            d.CreatedAt,
+            d.UpdatedAt,
+            d.UserId,
+            UserName = d.User?.DisplayName,
+            Balance = DebtCalculator.CurrentBalance(d.StartingAmount, d.InterestRate, payments, d.CreatedAt, asOf),
+            PaidTotal = DebtCalculator.PaidTotal(payments),
+        };
     }
 
     private static async Task<IResult> GetSimulationData(
         AppDbContext db,
         ClaimsPrincipal principal)
     {
-        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return Results.Unauthorized();
+        var scope = await HouseholdScope.ResolveAsync(db, principal);
+        if (scope is null) return Results.Unauthorized();
 
-        IQueryable<Debt> query;
-
-        if (user.HouseholdId is not null)
-        {
-            var memberIds = await db.Users
-                .Where(u => u.HouseholdId == user.HouseholdId)
-                .Select(u => u.Id)
-                .ToListAsync();
-
-            query = db.Debts.Where(d => memberIds.Contains(d.UserId));
-        }
-        else
-        {
-            query = db.Debts.Where(d => d.UserId == userId);
-        }
-
-        var debts = await query
+        var debts = await db.Debts
+            .Where(d => scope.MemberIds.Contains(d.UserId))
             .Include(d => d.Payments)
             .OrderBy(d => d.CreatedAt)
             .ToListAsync();
 
+        var now = DateTime.UtcNow;
         var result = debts.Select(d => new
         {
             id = d.Id,
@@ -291,6 +255,10 @@ public static class DebtEndpoints
             minPayment = d.MinPayment,
             dueDay = d.DueDay,
             userId = d.UserId,
+            // Authoritative interest-aware balance so simulations start from reality.
+            currentBalance = DebtCalculator.CurrentBalance(
+                d.StartingAmount, d.InterestRate,
+                d.Payments.Select(p => (p.PaidAt, p.Amount)), d.CreatedAt, now),
             payments = d.Payments
                 .OrderBy(p => p.PaidAt)
                 .Select(p => new

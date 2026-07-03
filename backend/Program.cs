@@ -57,6 +57,16 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Daily email digest pipeline (data -> render -> send -> schedule).
+builder.Services.AddScoped<backend.Services.Digest.DigestService>();
+builder.Services.AddScoped<backend.Services.Digest.DigestDispatcher>();
+builder.Services.AddSingleton<backend.Services.Digest.IDigestRenderer, backend.Services.Digest.BaselineDigestRenderer>();
+if (string.Equals(builder.Configuration["Email:Provider"], "smtp", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddSingleton<backend.Services.Email.IEmailSender, backend.Services.Email.SmtpEmailSender>();
+else
+    builder.Services.AddSingleton<backend.Services.Email.IEmailSender, backend.Services.Email.FileEmailSender>();
+builder.Services.AddHostedService<backend.Services.Digest.DigestScheduler>();
+
 // CORS — reads allowed origins from config (comma-separated)
 var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:3000")
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -77,6 +87,14 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Seed a lived-in demo household for local development.
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    await DemoSeeder.SeedAsync(db, userManager, app.Logger);
 }
 
 app.UseCors();
@@ -93,5 +111,7 @@ app.MapGroceryEndpoints();
 app.MapTodoEndpoints();
 app.MapChoreEndpoints();
 app.MapCalendarEndpoints();
+app.MapTodayEndpoints();
+app.MapDigestEndpoints();
 
 app.Run();

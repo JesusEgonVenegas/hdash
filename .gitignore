@@ -57,6 +57,10 @@ backend/app.db
 backend/app.db-shm
 backend/app.db-wal
 
+# Generated digest emails (dev file sender)
+backend/outbox/
+backend/bin/**/outbox/
+
 *.tmp
 *.temp
 *.bak
