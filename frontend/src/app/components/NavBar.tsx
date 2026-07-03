@@ -16,6 +16,7 @@ const links = [
     { href: "/calendar", label: "calendar" },
     { href: "/debts", label: "debts" },
     { href: "/payments", label: "payments" },
+    { href: "/settings", label: "settings" },
 ];
 
 export default function NavBar() {
