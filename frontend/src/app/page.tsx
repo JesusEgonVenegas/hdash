@@ -4,292 +4,249 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
-import type { TodoItem } from "@/types/todo";
 import type { ChoreItem } from "@/types/chore";
-import type { GroceryItem } from "@/types/grocery";
-import type { CalendarEvent } from "@/types/calendar";
-import type { Debt } from "@/types/debt";
 import type { PaymentApi } from "@/types/payment";
 
-interface DashboardData {
-    debts: Debt[];
+type DebtWithBalance = {
+    id: string;
+    name: string;
+    balance: number;
+    paidTotal: number;
+    interestRate: number;
+    dueDay: number;
+};
+
+type Today = {
+    counts: { chores: number; todos: number; events: number; debtsDue: number; grocery: number };
+};
+
+type Reminder = {
+    type: "chore" | "todo" | "event" | "debt";
+    severity: "overdue" | "due" | "upcoming";
+    title: string;
+    detail: string;
+    refId: string;
+    date: string;
+};
+
+type Data = {
+    today: Today;
+    reminders: Reminder[];
+    debts: DebtWithBalance[];
     payments: PaymentApi[];
-    todos: TodoItem[];
     chores: ChoreItem[];
-    grocery: GroceryItem[];
-    calendar: CalendarEvent[];
+};
+
+const SEVERITY: Record<Reminder["severity"], { label: string; cls: string }> = {
+    overdue: { label: "overdue", cls: "text-red-400 border-red-500/40" },
+    due: { label: "today", cls: "text-yellow-400 border-yellow-500/40" },
+    upcoming: { label: "soon", cls: "text-neutral-400 border-neutral-600/50" },
+};
+
+const TYPE_HREF: Record<Reminder["type"], string> = {
+    chore: "/chores",
+    todo: "/todos",
+    event: "/calendar",
+    debt: "/debts",
+};
+
+function greeting(h: number) {
+    if (h < 5) return "Still up";
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
 }
 
-function formatDate(dateString: string) {
-    const d = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "2-digit",
-    }).format(d);
+function money(n: number) {
+    return "$" + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
+function shortDate(s: string) {
+    return new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export default function DashboardPage() {
     const { token, user, isLoading } = useAuth();
-    const [data, setData] = useState<DashboardData | null>(null);
+    const [data, setData] = useState<Data | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isLoading || !token) return;
-
-        async function load() {
+        (async () => {
             try {
-                const now = new Date();
-                const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-
-                const [debts, payments, todos, chores, grocery, calendar] = await Promise.all([
-                    apiFetch<Debt[]>("/api/debts", { token }),
-                    apiFetch<PaymentApi[]>("/api/payments?limit=5", { token }),
-                    apiFetch<TodoItem[]>("/api/todos", { token }).catch(() => [] as TodoItem[]),
-                    apiFetch<ChoreItem[]>("/api/chores", { token }).catch(() => [] as ChoreItem[]),
-                    apiFetch<GroceryItem[]>("/api/grocery", { token }).catch(() => [] as GroceryItem[]),
-                    apiFetch<CalendarEvent[]>(`/api/calendar?month=${monthKey}`, { token }).catch(() => [] as CalendarEvent[]),
+                const [today, reminders, debts, payments, chores] = await Promise.all([
+                    apiFetch<Today>("/api/today", { token }),
+                    apiFetch<{ items: Reminder[] }>("/api/reminders", { token }).then((r) => r.items),
+                    apiFetch<DebtWithBalance[]>("/api/debts", { token }).catch(() => []),
+                    apiFetch<PaymentApi[]>("/api/payments?limit=5", { token }).catch(() => []),
+                    apiFetch<ChoreItem[]>("/api/chores", { token }).catch(() => []),
                 ]);
-                setData({ debts, payments, todos, chores, grocery, calendar });
-            } catch (err: any) {
-                setError(err.message ?? "Failed to load dashboard");
+                setData({ today, reminders, debts, payments, chores });
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Failed to load dashboard");
             }
-        }
-
-        load();
+        })();
     }, [token, isLoading]);
 
-    if (isLoading || !data) {
-        return (
-            <section className="space-y-6">
-                <div className="border border-neutral-700 p-4">
-                    <h1 className="text-lg text-green-400">{"> "}DASHBOARD</h1>
-                </div>
-                {error ? (
-                    <div className="ascii-error">
-                        [ERROR] {error}
-                    </div>
-                ) : (
-                    <p className="text-neutral-500 text-sm">loading...</p>
-                )}
-            </section>
-        );
-    }
+    if (isLoading || (!data && !error)) return <p className="text-neutral-500 font-mono">loading...</p>;
+    if (error) return <div className="ascii-error font-mono">[ERROR] {error}</div>;
+    if (!data) return null;
 
-    const { debts, payments, todos, chores, grocery, calendar } = data;
+    const { today, reminders, debts, payments, chores } = data;
+    const now = new Date();
 
-    // Debt stats
-    const totalDebt = debts.reduce((sum, d) => sum + d.startingAmount, 0);
-    const now = Date.now();
-    const last30Days = payments.filter(
-        (p) => now - new Date(p.paidAt).getTime() <= 30 * 24 * 60 * 60 * 1000
+    const totalOwed = debts.reduce((s, d) => s + d.balance, 0);
+    const monthlyInterest = debts.reduce((s, d) => s + (d.balance * d.interestRate) / 1200, 0);
+    const myChores = chores
+        .filter((c) => !c.isCompletedThisCycle && c.assignedToUserId === user?.id)
+        .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
+    const recentPayments = [...payments].sort(
+        (a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime()
     );
-    const totalPaid30 = last30Days.reduce((sum, p) => sum + p.amount, 0);
-
-    // Todo stats
-    const pendingTodos = todos.filter(t => !t.isCompleted);
-    const overdueTodos = pendingTodos.filter(t =>
-        t.dueDate && new Date(t.dueDate) < new Date()
-    );
-
-    // Chore stats
-    const dueChores = chores.filter(c => !c.isCompletedThisCycle);
-    const overdueChores = dueChores.filter(c =>
-        new Date(c.nextDueDate) < new Date()
-    );
-    const myChores = dueChores.filter(c => c.assignedToUserId === user?.id);
-
-    // Grocery stats
-    const uncheckedGrocery = grocery.filter(g => !g.isChecked);
-
-    // Calendar — upcoming events (next 7 days)
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const weekFromNow = new Date(todayStart);
-    weekFromNow.setDate(weekFromNow.getDate() + 7);
-    const upcomingEvents = calendar
-        .filter(e => new Date(e.startDate) >= todayStart && new Date(e.startDate) <= weekFromNow)
-        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-        .slice(0, 5);
 
     return (
-        <section className="space-y-6">
-            <div className="border border-neutral-700 p-4">
-                <h1 className="text-lg text-green-400">{"> "}DASHBOARD</h1>
-                <p className="text-neutral-500 text-xs mt-1">
-                    {user?.householdName
-                        ? `household: ${user.householdName}`
-                        : "personal overview"}
-                </p>
+        <section className="space-y-6 font-mono">
+            {/* HEADER */}
+            <div className="flex items-baseline justify-between border-b border-neutral-700 pb-2">
+                <h1 className="text-green-400 text-lg font-bold tracking-wider">
+                    {greeting(now.getHours())}, {user?.displayName}.
+                </h1>
+                <span className="text-neutral-500 text-sm">
+                    {user?.householdName ? `${user.householdName} · ` : ""}
+                    {now.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
+                </span>
             </div>
 
             {!user?.householdId && (
-                <div className="border border-yellow-600/50 bg-yellow-500/5 p-4">
+                <div className="border border-yellow-600/50 bg-yellow-500/5 p-4 text-sm">
                     <span className="text-yellow-400">[!]</span>{" "}
-                    <span className="text-neutral-300 text-sm">
+                    <span className="text-neutral-300">
                         You&apos;re not in a household.{" "}
-                        <Link href="/household" className="text-green-400 underline">
-                            Create or join one
-                        </Link>{" "}
-                        to share grocery lists, todos, and chores with your housemates.
+                        <Link href="/household" className="text-green-400 underline">Create or join one</Link>{" "}
+                        to share everything with your housemates.
                     </span>
                 </div>
             )}
 
-            {/* QUICK STATS ROW */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Link href="/todos" className="border border-neutral-700 p-4 hover:border-neutral-600 transition-colors">
-                    <div className="text-neutral-500 text-xs mb-1">TODOS</div>
-                    <div className="text-xl text-white">{pendingTodos.length}</div>
-                    {overdueTodos.length > 0 && (
-                        <div className="text-red-400 text-xs mt-1">{overdueTodos.length} overdue</div>
-                    )}
-                </Link>
-                <Link href="/chores" className="border border-neutral-700 p-4 hover:border-neutral-600 transition-colors">
-                    <div className="text-neutral-500 text-xs mb-1">CHORES DUE</div>
-                    <div className="text-xl text-white">{dueChores.length}</div>
-                    {myChores.length > 0 && (
-                        <div className="text-green-400 text-xs mt-1">{myChores.length} yours</div>
-                    )}
-                </Link>
-                <Link href="/grocery" className="border border-neutral-700 p-4 hover:border-neutral-600 transition-colors">
-                    <div className="text-neutral-500 text-xs mb-1">GROCERY</div>
-                    <div className="text-xl text-white">{uncheckedGrocery.length}</div>
-                    <div className="text-neutral-600 text-xs mt-1">to buy</div>
-                </Link>
-                <Link href="/debts" className="border border-neutral-700 p-4 hover:border-neutral-600 transition-colors">
-                    <div className="text-neutral-500 text-xs mb-1">TOTAL DEBT</div>
-                    <div className="text-xl text-blue-400">${totalDebt.toLocaleString()}</div>
-                    {totalPaid30 > 0 && (
-                        <div className="text-green-400 text-xs mt-1">${totalPaid30.toFixed(0)} paid (30d)</div>
-                    )}
-                </Link>
+            {/* STAT ROW */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <Stat label="chores due" value={today.counts.chores} href="/chores" accent={today.counts.chores > 0} />
+                <Stat label="todos due" value={today.counts.todos} href="/todos" accent={today.counts.todos > 0} />
+                <Stat label="events" value={today.counts.events} href="/calendar" />
+                <Stat label="to buy" value={today.counts.grocery} href="/grocery" />
+                <Stat label="owed" value={money(totalOwed)} href="/debts" />
             </div>
 
-            {/* ACTION ITEMS */}
-            {(overdueTodos.length > 0 || overdueChores.length > 0) && (
-                <div className="border border-red-500/30 bg-red-500/5 p-4">
-                    <h2 className="text-sm text-red-400 mb-3">{"> "}NEEDS ATTENTION</h2>
-                    <div className="space-y-1">
-                        {overdueTodos.map(t => (
-                            <div key={t.id} className="flex justify-between py-1 border-b border-neutral-800 text-sm">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-red-400 text-xs">[TODO]</span>
-                                    <span className="text-white">{t.title}</span>
-                                </div>
-                                <span className="text-red-400 text-xs">
-                                    overdue {t.dueDate ? formatDate(t.dueDate) : ""}
-                                </span>
-                            </div>
-                        ))}
-                        {overdueChores.map(c => (
-                            <div key={c.id} className="flex justify-between py-1 border-b border-neutral-800 text-sm">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-red-400 text-xs">[CHORE]</span>
-                                    <span className="text-white">{c.name}</span>
-                                    {c.assignedToUserId === user?.id && (
-                                        <span className="text-green-400 text-xs">» your turn</span>
-                                    )}
-                                </div>
-                                <span className="text-red-400 text-xs">
-                                    overdue {formatDate(c.nextDueDate)}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
+            {/* NEEDS ATTENTION */}
+            <div className="border border-neutral-800 p-4">
+                <div className="flex items-baseline justify-between mb-3">
+                    <h2 className="text-neutral-400 text-xs uppercase tracking-widest">needs attention</h2>
+                    <Link href="/today" className="text-neutral-600 hover:text-green-400 text-xs">today →</Link>
                 </div>
-            )}
+                {reminders.length === 0 ? (
+                    <p className="text-neutral-500 text-sm">all clear — nothing due soon. ✓</p>
+                ) : (
+                    <ul className="space-y-1.5">
+                        {reminders.slice(0, 6).map((r, i) => {
+                            const sev = SEVERITY[r.severity];
+                            return (
+                                <li key={`${r.type}-${r.refId}-${i}`}>
+                                    <Link href={TYPE_HREF[r.type]} className="flex items-center gap-3 border border-neutral-800 hover:border-neutral-600 px-3 py-2 text-sm">
+                                        <span className={`text-[10px] uppercase border px-1.5 py-0.5 shrink-0 ${sev.cls}`}>{sev.label}</span>
+                                        <span className="text-neutral-500 text-xs w-10 shrink-0">{r.type}</span>
+                                        <span className="text-white flex-1 truncate">{r.title}</span>
+                                        <span className="text-neutral-500 text-xs hidden sm:block">{r.detail}</span>
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                        {reminders.length > 6 && (
+                            <li className="text-neutral-600 text-xs pt-1">+{reminders.length - 6} more on the today page</li>
+                        )}
+                    </ul>
+                )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* YOUR CHORES */}
-                {myChores.length > 0 && (
-                    <div className="border border-neutral-700 p-4">
-                        <h2 className="text-sm text-green-400 mb-3">{"> "}YOUR CHORES</h2>
-                        <div className="space-y-1">
-                            {myChores.slice(0, 5).map(c => (
-                                <div key={c.id} className="flex justify-between py-1.5 border-b border-neutral-800 text-sm">
-                                    <span className="text-white">{c.name}</span>
-                                    <span className="text-neutral-500 text-xs">
-                                        {new Date(c.nextDueDate).toDateString() === new Date().toDateString()
-                                            ? "today"
-                                            : formatDate(c.nextDueDate)}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* UPCOMING EVENTS */}
-                <div className="border border-neutral-700 p-4">
-                    <h2 className="text-sm text-green-400 mb-3">{"> "}UPCOMING EVENTS</h2>
-                    {upcomingEvents.length === 0 ? (
-                        <p className="text-neutral-600 text-sm">no events this week</p>
-                    ) : (
-                        <div className="space-y-1">
-                            {upcomingEvents.map(e => (
-                                <div key={e.id} className="flex justify-between py-1.5 border-b border-neutral-800 text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${
-                                            e.color === "blue" ? "bg-blue-400" :
-                                            e.color === "red" ? "bg-red-400" :
-                                            e.color === "yellow" ? "bg-yellow-400" :
-                                            e.color === "purple" ? "bg-purple-400" :
-                                            "bg-green-400"
-                                        }`} />
-                                        <span className="text-white">{e.title}</span>
-                                    </div>
-                                    <span className="text-neutral-500 text-xs">
-                                        {formatDate(e.startDate)}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* UPCOMING DUE DATES */}
-                <div className="border border-neutral-700 p-4">
-                    <h2 className="text-sm text-green-400 mb-3">{"> "}DEBT DUE DATES</h2>
+                {/* THE LEDGER */}
+                <div className="border border-neutral-800 p-4">
+                    <h2 className="text-green-400 text-sm mb-3">{"> "}THE LEDGER</h2>
                     {debts.length === 0 ? (
                         <p className="text-neutral-600 text-sm">no debts tracked</p>
                     ) : (
-                        <div className="space-y-1">
-                            {[...debts]
-                                .sort((a, b) => a.dueDay - b.dueDay)
-                                .slice(0, 4)
-                                .map((d) => (
-                                    <div key={d.id} className="flex justify-between py-1.5 border-b border-neutral-800 text-sm">
-                                        <span className="text-neutral-300">{d.name}</span>
-                                        <span className="text-neutral-500">day {d.dueDay}</span>
-                                    </div>
-                                ))}
-                        </div>
+                        <>
+                            <table className="w-full text-sm">
+                                <tbody>
+                                    {debts.map((d) => (
+                                        <tr key={d.id} className="border-b border-neutral-800">
+                                            <td className="py-1.5 text-neutral-300">{d.name}</td>
+                                            <td className="py-1.5 text-right text-white tabular-nums">{money(d.balance)}</td>
+                                            <td className="py-1.5 text-right text-neutral-600 text-xs">day {d.dueDay}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <div className="flex justify-between mt-3 pt-2 border-t border-neutral-700 text-sm">
+                                <span className="text-neutral-400">owed <span className="text-white font-bold tabular-nums">{money(totalOwed)}</span></span>
+                                <span className="text-red-400 tabular-nums">+{money(monthlyInterest)}/mo interest</span>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* YOUR CHORES */}
+                <div className="border border-neutral-800 p-4">
+                    <h2 className="text-green-400 text-sm mb-3">{"> "}YOUR CHORES</h2>
+                    {myChores.length === 0 ? (
+                        <p className="text-neutral-600 text-sm">nothing assigned to you right now. nice. ✓</p>
+                    ) : (
+                        <ul className="space-y-1">
+                            {myChores.slice(0, 6).map((c) => {
+                                const overdue = new Date(c.nextDueDate) < now;
+                                const today = new Date(c.nextDueDate).toDateString() === now.toDateString();
+                                return (
+                                    <li key={c.id} className="flex items-center justify-between py-1.5 border-b border-neutral-800 text-sm">
+                                        <span className="flex items-center gap-2">
+                                            <span className="text-white">{c.name}</span>
+                                            {c.streak > 1 && <span className="text-orange-400 text-xs">🔥 {c.streak}</span>}
+                                        </span>
+                                        <span className={overdue ? "text-red-400 text-xs" : today ? "text-yellow-400 text-xs" : "text-neutral-500 text-xs"}>
+                                            {overdue ? "overdue" : today ? "today" : shortDate(c.nextDueDate)}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     )}
                 </div>
 
                 {/* RECENT PAYMENTS */}
-                <div className="border border-neutral-700 p-4">
-                    <h2 className="text-sm text-green-400 mb-3">{"> "}RECENT PAYMENTS</h2>
-                    {payments.length === 0 ? (
-                        <p className="text-neutral-600 text-sm">no payments recorded</p>
-                    ) : (
-                        <div className="space-y-1">
-                            {[...payments]
-                                .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())
-                                .slice(0, 4)
-                                .map((p) => (
-                                    <div
-                                        key={p.id}
-                                        className="flex justify-between py-1.5 border-b border-neutral-800 text-sm"
-                                    >
-                                        <span className="text-green-400">${p.amount}</span>
-                                        <span className="text-neutral-500">{formatDate(p.paidAt)}</span>
-                                    </div>
-                                ))}
-                        </div>
-                    )}
-                </div>
+                {recentPayments.length > 0 && (
+                    <div className="border border-neutral-800 p-4">
+                        <h2 className="text-green-400 text-sm mb-3">{"> "}RECENT PAYMENTS</h2>
+                        <ul className="space-y-1">
+                            {recentPayments.slice(0, 5).map((p) => (
+                                <li key={p.id} className="flex items-center justify-between py-1.5 border-b border-neutral-800 text-sm">
+                                    <span className="text-neutral-400">{p.debt?.name ?? "payment"}</span>
+                                    <span className="flex items-center gap-3">
+                                        <span className="text-green-400 tabular-nums">{money(p.amount)}</span>
+                                        <span className="text-neutral-600 text-xs">{shortDate(p.paidAt)}</span>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         </section>
+    );
+}
+
+function Stat({ label, value, href, accent = false }: { label: string; value: number | string; href: string; accent?: boolean }) {
+    return (
+        <Link href={href} className="border border-neutral-800 hover:border-neutral-600 p-3 flex flex-col gap-1">
+            <span className={`text-xl font-bold tabular-nums ${accent ? "text-yellow-400" : "text-neutral-300"}`}>{value}</span>
+            <span className="text-neutral-500 text-xs">{label}</span>
+        </Link>
     );
 }
