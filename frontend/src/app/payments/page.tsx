@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import { Debt } from "@/types/debt";
 import PaymentsClient from "./components/PaymentsClient";
+import DebtsTabs from "../debts/components/DebtsTabs";
 
 export default function PaymentsPage() {
     const { token, isLoading } = useAuth();
@@ -33,6 +34,7 @@ export default function PaymentsPage() {
 
     return (
         <section className="space-y-6">
+            <DebtsTabs />
             <div className="border border-neutral-700 p-4">
                 <h1 className="text-lg text-green-400">{"> "}PAYMENT HISTORY</h1>
             </div>

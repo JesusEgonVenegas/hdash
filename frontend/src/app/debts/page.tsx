@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { toDebtWithBalance } from "@/lib/debt/balance";
 import { DebtWithBalance } from "@/types/debt";
 import DebtSheet from "./components/DebtSheet";
+import DebtsTabs from "./components/DebtsTabs";
 
 export default function DebtsPage() {
     const { token, isLoading } = useAuth();
@@ -29,6 +30,7 @@ export default function DebtsPage() {
 
     return (
         <section className="space-y-6">
+            <DebtsTabs />
             <div className="border border-neutral-700 p-4">
                 <div className="flex justify-between items-center">
                     <h1 className="text-lg text-green-400">{"> "}DEBTS</h1>
