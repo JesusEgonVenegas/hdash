@@ -17,6 +17,9 @@ public class ChoreItem
     public DateTime NextDueDate { get; set; }
     public DateTime? LastCompletedAt { get; set; }
 
+    // Consecutive on-time completions.
+    public int Streak { get; set; } = 0;
+
     public Guid? HouseholdId { get; set; }
     public Household? Household { get; set; }
 

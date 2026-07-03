@@ -6,5 +6,6 @@ public record UpdateCalendarEventRequest(
     DateTime? EndDate = null,
     string? Description = null,
     bool? IsAllDay = null,
-    string? Color = null
+    string? Color = null,
+    string? Recurrence = null
 );

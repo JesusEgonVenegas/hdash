@@ -54,6 +54,7 @@ export default function CalendarPage() {
     const [newEndDate, setNewEndDate] = useState("");
     const [newIsAllDay, setNewIsAllDay] = useState(false);
     const [newColor, setNewColor] = useState("green");
+    const [newRecurrence, setNewRecurrence] = useState("none");
     const [adding, setAdding] = useState(false);
 
     // Detail view
@@ -67,6 +68,7 @@ export default function CalendarPage() {
     const [editEndDate, setEditEndDate] = useState("");
     const [editIsAllDay, setEditIsAllDay] = useState(false);
     const [editColor, setEditColor] = useState("green");
+    const [editRecurrence, setEditRecurrence] = useState("none");
     const [saving, setSaving] = useState(false);
 
     const monthKey = getMonthKey(viewDate);
@@ -117,22 +119,20 @@ export default function CalendarPage() {
                 startDate: new Date(newStartDate).toISOString(),
                 isAllDay: newIsAllDay,
                 color: newColor,
+                recurrence: newRecurrence,
             };
             if (newDescription.trim()) body.description = newDescription.trim();
             if (newEndDate) body.endDate = new Date(newEndDate).toISOString();
 
-            const created = await apiFetch<CalendarEvent>("/api/calendar", {
-                method: "POST",
-                body,
-                token,
-            });
-            setEvents(prev => [...prev, created]);
+            await apiFetch<CalendarEvent>("/api/calendar", { method: "POST", body, token });
+            await loadEvents();
             setNewTitle("");
             setNewDescription("");
             setNewStartDate("");
             setNewEndDate("");
             setNewIsAllDay(false);
             setNewColor("green");
+            setNewRecurrence("none");
             setShowForm(false);
         } catch (err: any) {
             setError(err.data?.error ?? err.message ?? "Failed to add event");
@@ -148,6 +148,7 @@ export default function CalendarPage() {
         setEditEndDate(evt.endDate ? new Date(evt.endDate).toISOString().split("T")[0] : "");
         setEditIsAllDay(evt.isAllDay);
         setEditColor(evt.color);
+        setEditRecurrence(evt.recurrence ?? "none");
         setIsEditingEvent(true);
     }
 
@@ -162,17 +163,14 @@ export default function CalendarPage() {
                 startDate: new Date(editStartDate).toISOString(),
                 isAllDay: editIsAllDay,
                 color: editColor,
+                recurrence: editRecurrence,
             };
             if (editDescription.trim()) body.description = editDescription.trim();
             if (editEndDate) body.endDate = new Date(editEndDate).toISOString();
 
-            const updated = await apiFetch<CalendarEvent>(`/api/calendar/${selectedEvent.id}`, {
-                method: "PUT",
-                body,
-                token,
-            });
-            setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
-            setSelectedEvent(updated);
+            await apiFetch<CalendarEvent>(`/api/calendar/${selectedEvent.id}`, { method: "PUT", body, token });
+            await loadEvents();
+            setSelectedEvent(null);
             setIsEditingEvent(false);
         } catch (err: any) {
             setError(err.data?.error ?? err.message ?? "Failed to update event");
@@ -362,6 +360,20 @@ export default function CalendarPage() {
                                     ))}
                                 </div>
                             </div>
+
+                            <div>
+                                <label className="block text-sm text-neutral-400 mb-1">REPEATS:</label>
+                                <select
+                                    value={newRecurrence}
+                                    onChange={e => setNewRecurrence(e.target.value)}
+                                    className="bg-neutral-900 border border-neutral-700 text-neutral-200 px-2 py-2 focus:outline-none focus:border-green-400"
+                                >
+                                    <option value="none">does not repeat</option>
+                                    <option value="daily">daily</option>
+                                    <option value="weekly">weekly</option>
+                                    <option value="monthly">monthly</option>
+                                </select>
+                            </div>
                         </div>
 
                         <button
@@ -411,13 +423,13 @@ export default function CalendarPage() {
                                         <div className="space-y-0.5">
                                             {dayEvents.slice(0, 3).map(evt => (
                                                 <button
-                                                    key={evt.id}
+                                                    key={`${evt.id}-${evt.startDate}`}
                                                     onClick={() => setSelectedEvent(evt)}
                                                     className={`block w-full text-left text-[10px] px-1 py-0.5 border truncate cursor-pointer ${
                                                         COLOR_MAP[evt.color] || COLOR_MAP.green
                                                     }`}
                                                 >
-                                                    {evt.title}
+                                                    {evt.isRecurring && "↻ "}{evt.title}
                                                 </button>
                                             ))}
                                             {dayEvents.length > 3 && (
@@ -509,6 +521,19 @@ export default function CalendarPage() {
                                         ))}
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-xs text-neutral-400">REPEATS:</label>
+                                    <select
+                                        value={editRecurrence}
+                                        onChange={e => setEditRecurrence(e.target.value)}
+                                        className="bg-neutral-900 border border-neutral-700 text-neutral-200 text-xs px-2 py-1 focus:outline-none focus:border-green-400"
+                                    >
+                                        <option value="none">no repeat</option>
+                                        <option value="daily">daily</option>
+                                        <option value="weekly">weekly</option>
+                                        <option value="monthly">monthly</option>
+                                    </select>
+                                </div>
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -586,7 +611,7 @@ export default function CalendarPage() {
                             .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                             .map(evt => (
                                 <button
-                                    key={evt.id}
+                                    key={`${evt.id}-${evt.startDate}`}
                                     onClick={() => setSelectedEvent(evt)}
                                     className="flex items-center justify-between w-full py-1.5 border-b border-neutral-800 text-sm text-left cursor-pointer hover:bg-neutral-900/50"
                                 >

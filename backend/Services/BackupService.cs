@@ -56,8 +56,9 @@ public class BackupService : BackgroundService
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // VACUUM INTO takes a string literal, not a parameter; escape single quotes.
-        var safe = target.Replace("'", "''");
-        await db.Database.ExecuteSqlRawAsync($"VACUUM INTO '{safe}'", ct);
+        // Path is server-generated (timestamped) and quote-escaped, so this is safe.
+        var sql = "VACUUM INTO '" + target.Replace("'", "''") + "'";
+        await db.Database.ExecuteSqlRawAsync(sql, ct);
 
         _logger.LogInformation("Database backed up to {Target}", target);
         Prune(dir);

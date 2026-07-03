@@ -10,6 +10,9 @@ public class CalendarEvent
     public bool IsAllDay { get; set; } = false;
     public string Color { get; set; } = "green"; // green, blue, red, yellow, purple
 
+    // none, daily, weekly, monthly — expanded into occurrences in the month view.
+    public string Recurrence { get; set; } = "none";
+
     public string CreatedByUserId { get; set; } = string.Empty;
     public ApplicationUser CreatedBy { get; set; } = null!;
 

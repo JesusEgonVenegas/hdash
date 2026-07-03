@@ -9,6 +9,9 @@ public class TodoItem
     public string Priority { get; set; } = "medium"; // low, medium, high
     public DateTime? DueDate { get; set; }
 
+    // none, daily, weekly, monthly — when completed, the next occurrence is created.
+    public string Recurrence { get; set; } = "none";
+
     public string CreatedByUserId { get; set; } = string.Empty;
     public ApplicationUser CreatedBy { get; set; } = null!;
 

@@ -30,6 +30,7 @@ export default function TodosPage() {
     const [newPriority, setNewPriority] = useState<"low" | "medium" | "high">("medium");
     const [newDueDate, setNewDueDate] = useState("");
     const [newAssignee, setNewAssignee] = useState("");
+    const [newRecurrence, setNewRecurrence] = useState("none");
     const [adding, setAdding] = useState(false);
     const [showForm, setShowForm] = useState(false);
 
@@ -75,6 +76,7 @@ export default function TodosPage() {
             const body: any = {
                 title: newTitle.trim(),
                 priority: newPriority,
+                recurrence: newRecurrence,
             };
             if (newDueDate) body.dueDate = new Date(newDueDate).toISOString();
             if (newAssignee) body.assignedToUserId = newAssignee;
@@ -89,6 +91,7 @@ export default function TodosPage() {
             setNewPriority("medium");
             setNewDueDate("");
             setNewAssignee("");
+            setNewRecurrence("none");
             setShowForm(false);
         } catch (err: any) {
             setError(err.data?.error ?? err.message ?? "Failed to add todo");
@@ -103,9 +106,12 @@ export default function TodosPage() {
                 method: "PUT",
                 token,
             });
-            setItems((prev) =>
-                prev.map((item) => (item.id === id ? updated : item))
-            );
+            // Completing a recurring todo spawns the next occurrence — reload to show it.
+            if (updated.isCompleted && updated.recurrence !== "none") {
+                await loadItems();
+            } else {
+                setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+            }
         } catch (err: any) {
             setError(err.message ?? "Failed to toggle todo");
         }
@@ -229,6 +235,20 @@ export default function TodosPage() {
                                     <option value="low" className="bg-neutral-900">low</option>
                                     <option value="medium" className="bg-neutral-900">medium</option>
                                     <option value="high" className="bg-neutral-900">high</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-neutral-400 mb-1">REPEATS:</label>
+                                <select
+                                    value={newRecurrence}
+                                    onChange={(e) => setNewRecurrence(e.target.value)}
+                                    className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white focus:outline-none focus:border-green-400"
+                                >
+                                    <option value="none" className="bg-neutral-900">never</option>
+                                    <option value="daily" className="bg-neutral-900">daily</option>
+                                    <option value="weekly" className="bg-neutral-900">weekly</option>
+                                    <option value="monthly" className="bg-neutral-900">monthly</option>
                                 </select>
                             </div>
 
@@ -414,6 +434,9 @@ function TodoRow({
                             >
                                 {item.title}
                             </span>
+                            {item.recurrence && item.recurrence !== "none" && (
+                                <span className="text-xs text-neutral-500" title={`repeats ${item.recurrence}`}>↻ {item.recurrence}</span>
+                            )}
                             <span className={`text-xs ${PRIORITY_COLORS[item.priority]}`}>
                                 {PRIORITY_LABELS[item.priority]}
                             </span>

@@ -6,5 +6,6 @@ public record UpdateTodoRequest(
     bool? IsCompleted = null,
     string? Priority = null,
     DateTime? DueDate = null,
-    string? AssignedToUserId = null
+    string? AssignedToUserId = null,
+    string? Recurrence = null
 );

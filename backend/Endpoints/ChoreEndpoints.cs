@@ -167,6 +167,10 @@ public static class ChoreEndpoints
 
         if (!CanAccess(user, item)) return Results.Forbid();
 
+        // streak: on-time completions build it up; a late one restarts at 1
+        var onTime = DateTime.UtcNow.Date <= item.NextDueDate.Date;
+        item.Streak = onTime ? item.Streak + 1 : 1;
+
         // mark as completed for this cycle
         item.LastCompletedAt = DateTime.UtcNow;
         item.IsCompletedThisCycle = true;
@@ -257,6 +261,7 @@ public static class ChoreEndpoints
         c.IsCompletedThisCycle,
         c.NextDueDate,
         c.LastCompletedAt,
+        c.Streak,
         c.CreatedAt,
         c.UpdatedAt,
     };

@@ -5,6 +5,7 @@ export interface TodoItem {
     isCompleted: boolean;
     priority: "low" | "medium" | "high";
     dueDate: string | null;
+    recurrence: "none" | "daily" | "weekly" | "monthly";
     createdByUserId: string;
     createdByName: string | null;
     assignedToUserId: string | null;
@@ -19,6 +20,7 @@ export interface CreateTodoRequest {
     priority?: "low" | "medium" | "high";
     dueDate?: string;
     assignedToUserId?: string;
+    recurrence?: "none" | "daily" | "weekly" | "monthly";
 }
 
 export interface UpdateTodoRequest {

@@ -6,5 +6,6 @@ public record CreateCalendarEventRequest(
     DateTime? EndDate = null,
     string? Description = null,
     bool IsAllDay = false,
-    string Color = "green"
+    string Color = "green",
+    string Recurrence = "none"
 );

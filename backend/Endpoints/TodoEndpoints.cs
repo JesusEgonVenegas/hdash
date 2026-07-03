@@ -89,6 +89,7 @@ public static class TodoEndpoints
             CreatedByUserId = userId,
             AssignedToUserId = user.HouseholdId is not null ? request.AssignedToUserId : null,
             HouseholdId = user.HouseholdId,
+            Recurrence = ValidRecurrence(request.Recurrence),
         };
 
         db.TodoItems.Add(item);
@@ -136,6 +137,8 @@ public static class TodoEndpoints
         }
         if (request.DueDate is not null)
             item.DueDate = request.DueDate;
+        if (request.Recurrence is not null)
+            item.Recurrence = ValidRecurrence(request.Recurrence);
         if (request.AssignedToUserId is not null && user.HouseholdId is not null)
         {
             var assignee = await db.Users.FirstOrDefaultAsync(u => u.Id == request.AssignedToUserId);
@@ -174,6 +177,24 @@ public static class TodoEndpoints
 
         item.IsCompleted = !item.IsCompleted;
         item.UpdatedAt = DateTime.UtcNow;
+
+        // Completing a recurring todo spawns the next occurrence.
+        if (item.IsCompleted && item.Recurrence != "none")
+        {
+            var baseDate = item.DueDate ?? DateTime.UtcNow;
+            db.TodoItems.Add(new TodoItem
+            {
+                Title = item.Title,
+                Description = item.Description,
+                Priority = item.Priority,
+                DueDate = AdvanceDate(item.Recurrence, baseDate),
+                Recurrence = item.Recurrence,
+                CreatedByUserId = item.CreatedByUserId,
+                AssignedToUserId = item.AssignedToUserId,
+                HouseholdId = item.HouseholdId,
+            });
+        }
+
         await db.SaveChangesAsync();
 
         return Results.Ok(ToResponse(item));
@@ -241,6 +262,19 @@ public static class TodoEndpoints
         return false;
     }
 
+    private static readonly string[] Recurrences = { "none", "daily", "weekly", "monthly" };
+
+    private static string ValidRecurrence(string? r) =>
+        r is not null && Recurrences.Contains(r) ? r : "none";
+
+    private static DateTime AdvanceDate(string recurrence, DateTime from) => recurrence switch
+    {
+        "daily" => from.AddDays(1),
+        "weekly" => from.AddDays(7),
+        "monthly" => from.AddMonths(1),
+        _ => from.AddDays(1),
+    };
+
     private static object ToResponse(TodoItem t) => new
     {
         t.Id,
@@ -249,6 +283,7 @@ public static class TodoEndpoints
         t.IsCompleted,
         t.Priority,
         t.DueDate,
+        t.Recurrence,
         t.CreatedByUserId,
         CreatedByName = t.CreatedBy?.DisplayName,
         t.AssignedToUserId,

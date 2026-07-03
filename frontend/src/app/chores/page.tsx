@@ -403,6 +403,11 @@ function ChoreRow({
                             <span className="text-xs text-neutral-600">
                                 [{FREQUENCY_LABELS[item.frequency]}]
                             </span>
+                            {item.streak > 1 && (
+                                <span className="text-xs text-orange-400" title={`${item.streak} on-time in a row`}>
+                                    🔥 {item.streak}
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-3 mt-0.5">

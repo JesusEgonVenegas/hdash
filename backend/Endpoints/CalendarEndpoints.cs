@@ -45,36 +45,71 @@ public static class CalendarEndpoints
                 .Where(e => e.CreatedByUserId == userId && e.HouseholdId == null);
         }
 
-        // Optional month filter: ?month=2026-03
-        if (!string.IsNullOrEmpty(month) && DateTime.TryParse(month + "-01", out var monthStart))
+        var all = await query.Include(e => e.CreatedBy).ToListAsync();
+
+        // No month → return base events as stored (no expansion).
+        if (string.IsNullOrEmpty(month) || !DateTime.TryParse(month + "-01", out var monthStart))
+            return Results.Ok(all.OrderBy(e => e.StartDate).Select(e => Project(e, e.StartDate, e.EndDate)));
+
+        var monthEnd = monthStart.AddMonths(1);
+        var occurrences = new List<(DateTime Start, object Projection)>();
+
+        foreach (var e in all)
         {
-            var monthEnd = monthStart.AddMonths(1);
-            query = query.Where(e =>
-                e.StartDate < monthEnd && (e.EndDate == null || e.EndDate >= monthStart) ||
-                e.StartDate >= monthStart && e.StartDate < monthEnd);
+            if (e.Recurrence == "none")
+            {
+                var overlaps = e.StartDate < monthEnd && (e.EndDate == null || e.EndDate >= monthStart)
+                    || (e.StartDate >= monthStart && e.StartDate < monthEnd);
+                if (overlaps) occurrences.Add((e.StartDate, Project(e, e.StartDate, e.EndDate)));
+                continue;
+            }
+
+            // Expand recurring series into occurrences within the month.
+            var occ = e.StartDate;
+            var guard = 0;
+            while (occ < monthEnd && guard++ < 4000)
+            {
+                if (occ >= monthStart)
+                {
+                    var end = e.EndDate.HasValue ? e.EndDate.Value + (occ - e.StartDate) : (DateTime?)null;
+                    occurrences.Add((occ, Project(e, occ, end)));
+                }
+                occ = Advance(e.Recurrence, occ);
+            }
         }
 
-        var events = await query
-            .Include(e => e.CreatedBy)
-            .OrderBy(e => e.StartDate)
-            .Select(e => new
-            {
-                e.Id,
-                e.Title,
-                e.Description,
-                e.StartDate,
-                e.EndDate,
-                e.IsAllDay,
-                e.Color,
-                e.CreatedByUserId,
-                CreatedByName = e.CreatedBy.DisplayName,
-                e.HouseholdId,
-                e.CreatedAt,
-            })
-            .ToListAsync();
-
-        return Results.Ok(events);
+        return Results.Ok(occurrences.OrderBy(o => o.Start).Select(o => o.Projection));
     }
+
+    private static readonly string[] Recurrences = ["none", "daily", "weekly", "monthly"];
+
+    private static string ValidRecurrence(string? r) =>
+        r is not null && Recurrences.Contains(r) ? r : "none";
+
+    private static DateTime Advance(string recurrence, DateTime from) => recurrence switch
+    {
+        "daily" => from.AddDays(1),
+        "weekly" => from.AddDays(7),
+        "monthly" => from.AddMonths(1),
+        _ => from.AddDays(1),
+    };
+
+    private static object Project(CalendarEvent e, DateTime start, DateTime? end) => new
+    {
+        id = e.Id,
+        title = e.Title,
+        description = e.Description,
+        startDate = start,
+        endDate = end,
+        isAllDay = e.IsAllDay,
+        color = e.Color,
+        recurrence = e.Recurrence,
+        isRecurring = e.Recurrence != "none",
+        createdByUserId = e.CreatedByUserId,
+        createdByName = e.CreatedBy?.DisplayName,
+        householdId = e.HouseholdId,
+        createdAt = e.CreatedAt,
+    };
 
     // POST /api/calendar
     private static async Task<IResult> CreateEvent(
@@ -99,27 +134,16 @@ public static class CalendarEndpoints
             EndDate = req.EndDate,
             IsAllDay = req.IsAllDay,
             Color = color,
+            Recurrence = ValidRecurrence(req.Recurrence),
             CreatedByUserId = userId,
+            CreatedBy = user,
             HouseholdId = user.HouseholdId,
         };
 
         db.CalendarEvents.Add(evt);
         await db.SaveChangesAsync();
 
-        return Results.Created($"/api/calendar/{evt.Id}", new
-        {
-            evt.Id,
-            evt.Title,
-            evt.Description,
-            evt.StartDate,
-            evt.EndDate,
-            evt.IsAllDay,
-            evt.Color,
-            evt.CreatedByUserId,
-            CreatedByName = user.DisplayName,
-            evt.HouseholdId,
-            evt.CreatedAt,
-        });
+        return Results.Created($"/api/calendar/{evt.Id}", Project(evt, evt.StartDate, evt.EndDate));
     }
 
     // PUT /api/calendar/{id}
@@ -150,24 +174,12 @@ public static class CalendarEndpoints
         if (req.EndDate != null) evt.EndDate = req.EndDate;
         if (req.IsAllDay != null) evt.IsAllDay = req.IsAllDay.Value;
         if (req.Color != null && ValidColors.Contains(req.Color)) evt.Color = req.Color;
+        if (req.Recurrence != null) evt.Recurrence = ValidRecurrence(req.Recurrence);
 
         evt.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
-        return Results.Ok(new
-        {
-            evt.Id,
-            evt.Title,
-            evt.Description,
-            evt.StartDate,
-            evt.EndDate,
-            evt.IsAllDay,
-            evt.Color,
-            evt.CreatedByUserId,
-            CreatedByName = evt.CreatedBy.DisplayName,
-            evt.HouseholdId,
-            evt.CreatedAt,
-        });
+        return Results.Ok(Project(evt, evt.StartDate, evt.EndDate));
     }
 
     // DELETE /api/calendar/{id}
