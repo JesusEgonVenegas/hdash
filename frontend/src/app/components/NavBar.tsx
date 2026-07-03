@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { apiFetch } from "@/lib/api";
 
 const links = [
+    { href: "/today", label: "today" },
     { href: "/", label: "dashboard" },
     { href: "/household", label: "household" },
     { href: "/grocery", label: "grocery" },
@@ -18,8 +20,16 @@ const links = [
 
 export default function NavBar() {
     const pathname = usePathname();
-    const { user, logout, isLoading } = useAuth();
+    const { user, token, logout, isLoading } = useAuth();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [reminderCount, setReminderCount] = useState(0);
+
+    useEffect(() => {
+        if (!token) return;
+        apiFetch<{ count: number }>("/api/reminders", { token })
+            .then((r) => setReminderCount(r.count))
+            .catch(() => setReminderCount(0));
+    }, [token, pathname]);
 
     if (pathname === "/login" || pathname === "/register" || pathname === "/onboarding") return null;
     if (isLoading) return null;
@@ -52,6 +62,11 @@ export default function NavBar() {
                                         }`}
                                     >
                                         {link.label}
+                                        {link.href === "/today" && reminderCount > 0 && (
+                                            <span className="ml-1 text-[10px] text-red-400 align-super">
+                                                {reminderCount}
+                                            </span>
+                                        )}
                                     </Link>
                                 );
                             })}
@@ -109,6 +124,11 @@ export default function NavBar() {
                                     }`}
                                 >
                                     {link.label}
+                                    {link.href === "/today" && reminderCount > 0 && (
+                                        <span className="ml-1 text-[10px] text-red-400 align-super">
+                                            {reminderCount}
+                                        </span>
+                                    )}
                                 </Link>
                             );
                         })}

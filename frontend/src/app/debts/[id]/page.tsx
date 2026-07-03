@@ -60,7 +60,9 @@ export default function DebtDetailPage() {
             <h1 className="text-2xl font-bold">{debt.name}</h1>
 
             <div className="bg-gray-800 p-4 rounded space-y-2">
-                <p><strong>Balance:</strong> ${debt.amount?.toLocaleString() ?? debt.startingAmount?.toLocaleString()}</p>
+                <p><strong>Balance:</strong> ${(debt.balance ?? debt.startingAmount)?.toLocaleString()}</p>
+                <p><strong>Starting Amount:</strong> ${debt.startingAmount?.toLocaleString()}</p>
+                <p><strong>Paid So Far:</strong> ${(debt.paidTotal ?? 0)?.toLocaleString()}</p>
                 <p><strong>Interest Rate:</strong> {debt.interestRate}% APR</p>
                 <p><strong>Min Payment:</strong> ${debt.minPayment.toLocaleString()}</p>
                 <p><strong>Due Day:</strong> {debt.dueDay}</p>
