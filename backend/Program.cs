@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using backend.Data;
 using backend.DTOs;
 using backend.Endpoints;
@@ -53,6 +55,22 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtKey)),
         };
+
+        // Reject tokens whose jti has been revoked (server-side logout).
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var jti = context.Principal?.FindFirstValue(
+                    System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti);
+                if (jti is null) return;
+
+                var db = context.HttpContext.RequestServices
+                    .GetRequiredService<backend.Data.AppDbContext>();
+                if (await db.RevokedTokens.AnyAsync(t => t.Jti == jti))
+                    context.Fail("Token has been revoked.");
+            },
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -90,6 +108,7 @@ else
     builder.Services.AddSingleton<backend.Services.Email.IEmailSender, backend.Services.Email.FileEmailSender>();
 builder.Services.AddHostedService<backend.Services.Digest.DigestScheduler>();
 builder.Services.AddScoped<backend.Services.Email.AuthMailer>();
+builder.Services.AddHostedService<backend.Services.BackupService>();
 
 // CORS — reads allowed origins from config (comma-separated)
 var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:3000")

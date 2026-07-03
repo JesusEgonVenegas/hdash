@@ -190,10 +190,11 @@ Built for a household you run yourself. Progress toward opening it to the public
 - [x] Email verification + password reset (Identity tokens, generic replies, no account enumeration)
 - [x] Login rate-limiting / brute-force protection (per-IP, `Auth:RateLimit:PermitPerMinute`)
 - [x] Per-user digest send-hour (each person picks their own delivery time)
-- [ ] Real token revocation (logout is currently client-side only)
-- [ ] Automated backups for the SQLite volume
+- [x] Server-side token revocation (logout invalidates the JWT via a jti denylist)
+- [x] Automated SQLite backups (`VACUUM INTO` snapshots on an interval, with rotation)
 
 > Email verification is wired but **not enforced** by default — set `Auth:RequireConfirmedEmail=true` to require a confirmed address before sign-in.
+> Backups are **off** by default — set `Backup:Enabled=true` in production.
 
 > Status: `dev` is the active branch; feature work lands via PR.
 

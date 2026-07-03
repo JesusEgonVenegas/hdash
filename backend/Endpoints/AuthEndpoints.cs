@@ -190,8 +190,25 @@ public static class AuthEndpoints
         ));
     }
 
-    private static IResult Logout()
+    private static async Task<IResult> Logout(ClaimsPrincipal principal, AppDbContext db)
     {
+        var jti = principal.FindFirstValue(JwtRegisteredClaimNames.Jti);
+        if (jti is not null && !await db.RevokedTokens.AnyAsync(t => t.Jti == jti))
+        {
+            var expUnix = principal.FindFirstValue("exp");
+            var expiresAt = long.TryParse(expUnix, out var secs)
+                ? DateTimeOffset.FromUnixTimeSeconds(secs).UtcDateTime
+                : DateTime.UtcNow.AddDays(1);
+
+            db.RevokedTokens.Add(new RevokedToken { Jti = jti, ExpiresAtUtc = expiresAt });
+
+            // Opportunistically purge tokens that have already expired.
+            var now = DateTime.UtcNow;
+            db.RevokedTokens.RemoveRange(db.RevokedTokens.Where(t => t.ExpiresAtUtc < now));
+
+            await db.SaveChangesAsync();
+        }
+
         return Results.Ok(new { message = "Logged out" });
     }
 

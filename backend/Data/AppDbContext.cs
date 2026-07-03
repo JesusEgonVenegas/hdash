@@ -16,10 +16,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TodoItem> TodoItems => Set<TodoItem>();
     public DbSet<ChoreItem> ChoreItems => Set<ChoreItem>();
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+    public DbSet<RevokedToken> RevokedTokens => Set<RevokedToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<RevokedToken>().HasKey(t => t.Jti);
 
         modelBuilder
             .Entity<Debt>()

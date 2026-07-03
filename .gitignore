@@ -63,6 +63,10 @@ backend/app.db-wal
 backend/outbox/
 backend/bin/**/outbox/
 
+# Database backups
+backend/backups/
+backend/bin/**/backups/
+
 *.tmp
 *.temp
 *.bak
