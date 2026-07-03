@@ -7,6 +7,69 @@ import type { HouseholdNote } from "@/types/note";
 
 const COLORS: HouseholdNote["color"][] = ["yellow", "green", "blue", "pink"];
 
+function NoteCard({
+    note,
+    onPin,
+    onDelete,
+    onSave,
+}: {
+    note: HouseholdNote;
+    onPin: () => void;
+    onDelete: () => void;
+    onSave: (text: string) => Promise<void>;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [text, setText] = useState(note.content);
+
+    async function save() {
+        if (text.trim() && text.trim() !== note.content) await onSave(text.trim());
+        setEditing(false);
+    }
+
+    return (
+        <div className={`border p-3 flex flex-col gap-2 ${NOTE_STYLE[note.color]}`}>
+            <div className="flex items-start justify-between gap-2">
+                {editing ? (
+                    <textarea
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        autoFocus
+                        rows={3}
+                        className="flex-1 bg-black/20 border border-white/20 px-2 py-1 text-neutral-100 text-sm resize-none focus:outline-none focus:border-green-400"
+                    />
+                ) : (
+                    <p className="text-neutral-100 text-sm whitespace-pre-wrap break-words flex-1">{note.content}</p>
+                )}
+                <button
+                    onClick={onPin}
+                    title={note.pinned ? "unpin" : "pin"}
+                    className={`shrink-0 text-sm cursor-pointer ${note.pinned ? "text-white" : "text-neutral-600 hover:text-neutral-300"}`}
+                >
+                    📌
+                </button>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-neutral-500 mt-auto pt-1 border-t border-white/10">
+                <span>
+                    {note.createdByName ?? "someone"} · {new Date(note.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </span>
+                <span className="flex items-center gap-2">
+                    {editing ? (
+                        <>
+                            <button onClick={save} className="text-green-400 hover:text-green-300 cursor-pointer">save</button>
+                            <button onClick={() => { setText(note.content); setEditing(false); }} className="text-neutral-600 hover:text-neutral-300 cursor-pointer">cancel</button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => setEditing(true)} className="text-neutral-600 hover:text-neutral-300 cursor-pointer">edit</button>
+                            <button onClick={onDelete} className="text-neutral-600 hover:text-red-400 cursor-pointer">×</button>
+                        </>
+                    )}
+                </span>
+            </div>
+        </div>
+    );
+}
+
 // Sticky-note surfaces — soft tint + matching border, legible in the dark UI.
 const NOTE_STYLE: Record<HouseholdNote["color"], string> = {
     yellow: "bg-yellow-400/10 border-yellow-500/40",
@@ -84,6 +147,15 @@ export default function NotesPage() {
         setNotes((prev) => prev.filter((n) => n.id !== id));
     }
 
+    async function saveEdit(id: string, text: string) {
+        const updated = await apiFetch<HouseholdNote>(`/api/notes/${id}`, {
+            method: "PUT",
+            body: { content: text },
+            token,
+        });
+        setNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
+    }
+
     if (isLoading || loading) return <p className="text-neutral-500 font-mono">loading...</p>;
 
     return (
@@ -138,26 +210,13 @@ export default function NotesPage() {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {notes.map((n) => (
-                        <div key={n.id} className={`border p-3 flex flex-col gap-2 ${NOTE_STYLE[n.color]}`}>
-                            <div className="flex items-start justify-between gap-2">
-                                <p className="text-neutral-100 text-sm whitespace-pre-wrap break-words flex-1">{n.content}</p>
-                                <button
-                                    onClick={() => togglePin(n)}
-                                    title={n.pinned ? "unpin" : "pin"}
-                                    className={`shrink-0 text-sm cursor-pointer ${n.pinned ? "text-white" : "text-neutral-600 hover:text-neutral-300"}`}
-                                >
-                                    📌
-                                </button>
-                            </div>
-                            <div className="flex items-center justify-between text-[11px] text-neutral-500 mt-auto pt-1 border-t border-white/10">
-                                <span>
-                                    {n.createdByName ?? "someone"} · {new Date(n.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                                </span>
-                                <button onClick={() => remove(n.id)} className="text-neutral-600 hover:text-red-400 cursor-pointer">
-                                    ×
-                                </button>
-                            </div>
-                        </div>
+                        <NoteCard
+                            key={n.id}
+                            note={n}
+                            onPin={() => togglePin(n)}
+                            onDelete={() => remove(n.id)}
+                            onSave={(text) => saveEdit(n.id, text)}
+                        />
                     ))}
                 </div>
             )}

@@ -16,6 +16,7 @@ const primaryLinks = [
     { href: "/calendar", label: "calendar" },
     { href: "/notes", label: "notes" },
     { href: "/debts", label: "debts" },
+    { href: "/expenses", label: "expenses" },
 ];
 
 const hideOn = ["/login", "/register", "/onboarding", "/forgot-password", "/reset-password", "/verify-email"];
