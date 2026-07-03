@@ -12,7 +12,34 @@ public static class DigestEndpoints
         var group = app.MapGroup("/api/digest").RequireAuthorization();
         group.MapGet("/preview", Preview);
         group.MapPost("/send-test", SendTest);
+        group.MapGet("/settings", GetSettings);
+        group.MapPut("/settings", UpdateSettings);
         return group;
+    }
+
+    public record DigestSettingsDto(bool DigestOptIn);
+
+    private static async Task<IResult> GetSettings(
+        AppDbContext db, IConfiguration config, ClaimsPrincipal principal)
+    {
+        var user = await CurrentUser(db, principal);
+        if (user is null) return Results.Unauthorized();
+        return Results.Ok(new
+        {
+            digestOptIn = user.DigestOptIn,
+            activeSkin = config["Digest:Skin"] ?? "departures",
+            schedulerEnabled = config.GetValue("Digest:Enabled", false),
+        });
+    }
+
+    private static async Task<IResult> UpdateSettings(
+        AppDbContext db, DigestSettingsDto dto, ClaimsPrincipal principal)
+    {
+        var user = await CurrentUser(db, principal);
+        if (user is null) return Results.Unauthorized();
+        user.DigestOptIn = dto.DigestOptIn;
+        await db.SaveChangesAsync();
+        return Results.Ok(new { digestOptIn = user.DigestOptIn });
     }
 
     // Renders the caller's digest as HTML so it can be opened in a browser tab.

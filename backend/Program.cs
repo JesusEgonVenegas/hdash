@@ -60,7 +60,13 @@ builder.Services.AddAuthorization();
 // Daily email digest pipeline (data -> render -> send -> schedule).
 builder.Services.AddScoped<backend.Services.Digest.DigestService>();
 builder.Services.AddScoped<backend.Services.Digest.DigestDispatcher>();
-builder.Services.AddSingleton<backend.Services.Digest.IDigestRenderer, backend.Services.Digest.BaselineDigestRenderer>();
+// Active digest skin — swap via Digest:Skin without touching the pipeline.
+builder.Services.AddSingleton<backend.Services.Digest.IDigestRenderer>(_ =>
+    (builder.Configuration["Digest:Skin"] ?? "departures").ToLowerInvariant() switch
+    {
+        "baseline" => new backend.Services.Digest.BaselineDigestRenderer(),
+        _ => new backend.Services.Digest.DeparturesDigestRenderer(),
+    });
 if (string.Equals(builder.Configuration["Email:Provider"], "smtp", StringComparison.OrdinalIgnoreCase))
     builder.Services.AddSingleton<backend.Services.Email.IEmailSender, backend.Services.Email.SmtpEmailSender>();
 else

@@ -31,7 +31,8 @@ public class DigestService
             : await _db.Users.Where(u => u.HouseholdId == household.Id).ToListAsync();
 
         var memberIds = members.Select(m => m.Id).ToList();
-        var emails = members.Where(m => m.Email is not null).Select(m => m.Email!).ToList();
+        // Content is shared across the household, but only opted-in members get emailed.
+        var emails = members.Where(m => m.DigestOptIn && m.Email is not null).Select(m => m.Email!).ToList();
 
         return await AssembleAsync(
             household.Name, emails, today,
@@ -50,7 +51,7 @@ public class DigestService
             return await BuildForHouseholdAsync(household, today);
         }
 
-        var emails = user.Email is null ? Array.Empty<string>() : new[] { user.Email };
+        var emails = user.Email is null || !user.DigestOptIn ? Array.Empty<string>() : new[] { user.Email };
         return await AssembleAsync(
             $"{user.DisplayName}'s Home", emails, today,
             chores: _db.ChoreItems.Where(c => c.CreatedByUserId == user.Id && c.HouseholdId == null).Include(c => c.AssignedTo),
