@@ -4,6 +4,7 @@ export interface User {
     displayName: string;
     householdId: string | null;
     householdName: string | null;
+    emailConfirmed?: boolean;
 }
 
 export interface AuthResponse {

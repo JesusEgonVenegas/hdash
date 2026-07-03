@@ -26,6 +26,9 @@ public static class AuthEndpoints
         group.MapPost("/login", Login).RequireRateLimiting("auth");
         group.MapGet("/me", GetCurrentUser).RequireAuthorization();
         group.MapPost("/logout", Logout).RequireAuthorization();
+        group.MapPut("/profile", UpdateProfile).RequireAuthorization();
+        group.MapPost("/change-password", ChangePassword).RequireAuthorization();
+        group.MapPost("/resend-verification-self", ResendVerificationSelf).RequireAuthorization();
         group.MapPost("/forgot-password", ForgotPassword).RequireRateLimiting("auth");
         group.MapPost("/reset-password", ResetPassword).RequireRateLimiting("auth");
         group.MapPost("/confirm-email", ConfirmEmail).RequireRateLimiting("auth");
@@ -186,8 +189,48 @@ public static class AuthEndpoints
             user.Email!,
             user.DisplayName,
             user.HouseholdId?.ToString(),
-            user.Household?.Name
+            user.Household?.Name,
+            user.EmailConfirmed
         ));
+    }
+
+    private static async Task<IResult> UpdateProfile(
+        UpdateProfileRequest request, ClaimsPrincipal principal, UserManager<ApplicationUser> userManager)
+    {
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null) return Results.Unauthorized();
+        if (string.IsNullOrWhiteSpace(request.DisplayName))
+            return Results.BadRequest(new { errors = new[] { "Display name is required." } });
+
+        user.DisplayName = request.DisplayName.Trim();
+        var result = await userManager.UpdateAsync(user);
+        return result.Succeeded
+            ? Results.Ok(new { displayName = user.DisplayName })
+            : Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+    }
+
+    private static async Task<IResult> ChangePassword(
+        ChangePasswordRequest request, ClaimsPrincipal principal, UserManager<ApplicationUser> userManager)
+    {
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null) return Results.Unauthorized();
+
+        var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        return result.Succeeded
+            ? Results.Ok(new { message = "Password changed." })
+            : Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+    }
+
+    private static async Task<IResult> ResendVerificationSelf(
+        ClaimsPrincipal principal, UserManager<ApplicationUser> userManager, AuthMailer mailer)
+    {
+        var user = await userManager.GetUserAsync(principal);
+        if (user is null) return Results.Unauthorized();
+        if (user.EmailConfirmed) return Results.Ok(new { message = "Email already confirmed." });
+
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        await mailer.SendVerificationAsync(user, token);
+        return Results.Ok(new { message = "Verification email sent." });
     }
 
     private static async Task<IResult> Logout(ClaimsPrincipal principal, AppDbContext db)

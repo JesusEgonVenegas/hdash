@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError } from "@/lib/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5063";
 
@@ -20,12 +20,24 @@ function hourLabel(h: number) {
     return `${hr}:00 ${period}`;
 }
 
+function firstError(e: unknown, fallback: string) {
+    return e instanceof ApiError && Array.isArray(e.data?.errors)
+        ? (e.data.errors as string[])[0]
+        : fallback;
+}
+
 export default function SettingsPage() {
-    const { token, isLoading, user } = useAuth();
+    const { token, isLoading, user, refreshUser } = useAuth();
     const [settings, setSettings] = useState<Settings | null>(null);
     const [busy, setBusy] = useState(false);
     const [flash, setFlash] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    // Profile + security form state
+    const [displayName, setDisplayName] = useState("");
+    const [curPw, setCurPw] = useState("");
+    const [newPw, setNewPw] = useState("");
+    const [confirmPw, setConfirmPw] = useState("");
 
     useEffect(() => {
         if (isLoading || !token) return;
@@ -34,7 +46,17 @@ export default function SettingsPage() {
             .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
     }, [token, isLoading]);
 
-    async function save(patch: Partial<Pick<Settings, "digestOptIn" | "digestHour">>, note: string) {
+    useEffect(() => {
+        if (user?.displayName) setDisplayName(user.displayName);
+    }, [user?.displayName]);
+
+    function flashMsg(m: string) {
+        setError(null);
+        setFlash(m);
+        setTimeout(() => setFlash(null), 4000);
+    }
+
+    async function saveDigest(patch: Partial<Pick<Settings, "digestOptIn" | "digestHour">>, note: string) {
         if (!settings || !token) return;
         const prev = settings;
         const next = { ...settings, ...patch };
@@ -52,16 +74,65 @@ export default function SettingsPage() {
         }
     }
 
+    async function saveProfile() {
+        if (!token || !displayName.trim()) return;
+        setBusy(true);
+        try {
+            await apiFetch("/api/auth/profile", { token, method: "PUT", body: { displayName: displayName.trim() } });
+            await refreshUser();
+            flashMsg("Profile updated.");
+        } catch (e) {
+            setError(firstError(e, "Could not update profile."));
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function changePassword() {
+        if (!token) return;
+        setError(null);
+        if (newPw !== confirmPw) {
+            setError("New passwords don't match.");
+            return;
+        }
+        setBusy(true);
+        try {
+            await apiFetch("/api/auth/change-password", {
+                token,
+                method: "POST",
+                body: { currentPassword: curPw, newPassword: newPw },
+            });
+            setCurPw("");
+            setNewPw("");
+            setConfirmPw("");
+            flashMsg("Password changed.");
+        } catch (e) {
+            setError(firstError(e, "Could not change password."));
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function resendVerification() {
+        if (!token) return;
+        setBusy(true);
+        try {
+            const r = await apiFetch<{ message: string }>("/api/auth/resend-verification-self", { token, method: "POST" });
+            flashMsg(r.message);
+        } catch {
+            setError("Could not send the verification email.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
     async function preview() {
         if (!token) return;
         setBusy(true);
         try {
-            const res = await fetch(`${API_BASE}/api/digest/preview`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetch(`${API_BASE}/api/digest/preview`, { headers: { Authorization: `Bearer ${token}` } });
             const html = await res.text();
-            const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-            window.open(url, "_blank");
+            window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
         } catch {
             setError("Could not build a preview.");
         } finally {
@@ -82,13 +153,10 @@ export default function SettingsPage() {
         }
     }
 
-    function flashMsg(m: string) {
-        setError(null);
-        setFlash(m);
-        setTimeout(() => setFlash(null), 4000);
-    }
-
     if (isLoading || (!settings && !error)) return <p className="text-neutral-500 font-mono">loading...</p>;
+
+    const inputCls =
+        "w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400 text-sm";
 
     return (
         <section className="space-y-6 font-mono">
@@ -97,9 +165,53 @@ export default function SettingsPage() {
                 <span className="text-neutral-500 text-sm">{user?.displayName}</span>
             </header>
 
-            {error && <div className="ascii-error text-red-400 text-sm">[ERROR] {error}</div>}
+            {error && <div className="text-red-400 text-sm border border-red-500/40 px-3 py-2">[ERROR] {error}</div>}
             {flash && <div className="text-green-400 text-sm border border-green-500/30 px-3 py-2">{flash}</div>}
 
+            {/* PROFILE */}
+            <div className="border border-neutral-800 p-4 space-y-4">
+                <h2 className="text-sm text-neutral-300">{"> "}PROFILE</h2>
+                <div>
+                    <label className="block text-xs text-neutral-500 mb-1">DISPLAY NAME</label>
+                    <div className="flex gap-2">
+                        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={inputCls} />
+                        <button
+                            onClick={saveProfile}
+                            disabled={busy || !displayName.trim() || displayName.trim() === user?.displayName}
+                            className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 text-sm disabled:opacity-30 whitespace-nowrap"
+                        >
+                            [ SAVE ]
+                        </button>
+                    </div>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-500">{user?.email}</span>
+                    {user?.emailConfirmed ? (
+                        <span className="text-green-400 text-xs border border-green-500/30 px-2 py-0.5">✓ verified</span>
+                    ) : (
+                        <button onClick={resendVerification} disabled={busy} className="text-yellow-500 hover:text-yellow-400 text-xs underline disabled:opacity-40">
+                            unverified — resend link
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* SECURITY */}
+            <div className="border border-neutral-800 p-4 space-y-3">
+                <h2 className="text-sm text-neutral-300">{"> "}SECURITY</h2>
+                <input type="password" placeholder="current password" value={curPw} onChange={(e) => setCurPw(e.target.value)} className={inputCls} />
+                <input type="password" placeholder="new password" value={newPw} onChange={(e) => setNewPw(e.target.value)} className={inputCls} />
+                <input type="password" placeholder="confirm new password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} className={inputCls} />
+                <button
+                    onClick={changePassword}
+                    disabled={busy || !curPw || !newPw}
+                    className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-30"
+                >
+                    [ CHANGE PASSWORD ]
+                </button>
+            </div>
+
+            {/* DIGEST */}
             <div className="border border-neutral-800 p-4 space-y-4">
                 <div>
                     <h2 className="text-sm text-neutral-300">{"> "}DAILY DIGEST</h2>
@@ -109,9 +221,8 @@ export default function SettingsPage() {
                     </p>
                 </div>
 
-                {/* Opt-in toggle */}
                 <button
-                    onClick={() => save({ digestOptIn: !settings!.digestOptIn }, !settings!.digestOptIn ? "Daily digest on." : "Daily digest off.")}
+                    onClick={() => saveDigest({ digestOptIn: !settings!.digestOptIn }, !settings!.digestOptIn ? "Daily digest on." : "Daily digest off.")}
                     className="flex items-center justify-between w-full border border-neutral-700 hover:border-neutral-500 px-3 py-2 text-sm"
                 >
                     <span className="text-neutral-300">Email me the daily digest</span>
@@ -120,43 +231,27 @@ export default function SettingsPage() {
                     </span>
                 </button>
 
-                {/* Send hour */}
                 {settings?.digestOptIn && (
                     <label className="flex items-center justify-between w-full border border-neutral-800 px-3 py-2 text-sm">
                         <span className="text-neutral-400">Deliver at</span>
                         <select
                             value={settings.digestHour ?? ""}
-                            onChange={(e) =>
-                                save(
-                                    { digestHour: e.target.value === "" ? null : Number(e.target.value) },
-                                    "Delivery time updated."
-                                )
-                            }
+                            onChange={(e) => saveDigest({ digestHour: e.target.value === "" ? null : Number(e.target.value) }, "Delivery time updated.")}
                             className="bg-neutral-900 border border-neutral-700 text-neutral-200 px-2 py-1 focus:outline-none focus:border-green-400"
                         >
                             <option value="">household default ({hourLabel(settings.defaultHour)})</option>
                             {Array.from({ length: 24 }, (_, h) => (
-                                <option key={h} value={h} className="bg-neutral-900">
-                                    {hourLabel(h)}
-                                </option>
+                                <option key={h} value={h} className="bg-neutral-900">{hourLabel(h)}</option>
                             ))}
                         </select>
                     </label>
                 )}
 
                 <div className="flex flex-wrap gap-3">
-                    <button
-                        onClick={preview}
-                        disabled={busy}
-                        className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 py-1.5 text-sm disabled:opacity-40"
-                    >
+                    <button onClick={preview} disabled={busy} className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 py-1.5 text-sm disabled:opacity-40">
                         [ PREVIEW ]
                     </button>
-                    <button
-                        onClick={sendTest}
-                        disabled={busy}
-                        className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-40"
-                    >
+                    <button onClick={sendTest} disabled={busy} className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-40">
                         [ SEND ME A TEST ]
                     </button>
                 </div>
