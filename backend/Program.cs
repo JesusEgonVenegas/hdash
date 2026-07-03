@@ -157,5 +157,6 @@ app.MapChoreEndpoints();
 app.MapCalendarEndpoints();
 app.MapTodayEndpoints();
 app.MapDigestEndpoints();
+app.MapNoteEndpoints();
 
 app.Run();

@@ -124,6 +124,13 @@ public static class DemoSeeder
             Event(household, alex, "Trash pickup", today.AddDays(1).AddHours(8), "green")
         );
 
+        // --- Pinboard notes ---
+        db.HouseholdNotes.AddRange(
+            new HouseholdNote { Content = "Landlord coming Thursday to fix the faucet — someone be home 2-4pm", Color = "pink", Pinned = true, CreatedByUserId = alex.Id, HouseholdId = household.Id, CreatedAt = today.AddDays(-1) },
+            new HouseholdNote { Content = "We're out of coffee filters btw", Color = "yellow", CreatedByUserId = sam.Id, HouseholdId = household.Id, CreatedAt = today.AddDays(-2) },
+            new HouseholdNote { Content = "Movie night Friday? I'll grab snacks 🍿", Color = "green", CreatedByUserId = sam.Id, HouseholdId = household.Id, CreatedAt = today }
+        );
+
         await db.SaveChangesAsync();
         logger.LogInformation(
             "Seeded demo household '{Household}' (invite {Code}) with 2 members, 3 debts, 9 groceries, 6 todos, 6 chores, 8 events.",

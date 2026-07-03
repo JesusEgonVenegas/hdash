@@ -17,6 +17,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ChoreItem> ChoreItems => Set<ChoreItem>();
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
     public DbSet<RevokedToken> RevokedTokens => Set<RevokedToken>();
+    public DbSet<HouseholdNote> HouseholdNotes => Set<HouseholdNote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -125,6 +126,20 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(e => e.Household)
             .WithMany()
             .HasForeignKey(e => e.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<HouseholdNote>()
+            .HasOne(n => n.CreatedBy)
+            .WithMany()
+            .HasForeignKey(n => n.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<HouseholdNote>()
+            .HasOne(n => n.Household)
+            .WithMany()
+            .HasForeignKey(n => n.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

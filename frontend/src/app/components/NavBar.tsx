@@ -14,6 +14,7 @@ const primaryLinks = [
     { href: "/todos", label: "todos" },
     { href: "/chores", label: "chores" },
     { href: "/calendar", label: "calendar" },
+    { href: "/notes", label: "notes" },
     { href: "/debts", label: "debts" },
 ];
 
