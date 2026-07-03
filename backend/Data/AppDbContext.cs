@@ -19,6 +19,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RevokedToken> RevokedTokens => Set<RevokedToken>();
     public DbSet<HouseholdNote> HouseholdNotes => Set<HouseholdNote>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<Meal> Meals => Set<Meal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -155,6 +156,20 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(e => e.Household)
             .WithMany()
             .HasForeignKey(e => e.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Meal>()
+            .HasOne(m => m.CreatedBy)
+            .WithMany()
+            .HasForeignKey(m => m.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Meal>()
+            .HasOne(m => m.Household)
+            .WithMany()
+            .HasForeignKey(m => m.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

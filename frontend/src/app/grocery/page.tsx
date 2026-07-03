@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import type { GroceryItem } from "@/types/grocery";
+import FoodTabs from "./components/FoodTabs";
 
 const AISLES = ["Produce", "Dairy", "Meat", "Bakery", "Pantry", "Frozen", "Household", "Other"];
 
@@ -140,6 +141,7 @@ export default function GroceryPage() {
 
     return (
         <section className="space-y-6">
+            <FoodTabs />
             <div className="border border-neutral-700 p-4">
                 <div className="flex justify-between items-center">
                     <div>

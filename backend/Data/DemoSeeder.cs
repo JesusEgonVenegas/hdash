@@ -139,6 +139,13 @@ public static class DemoSeeder
             new Expense { Description = "Dinner out", Amount = 45m, PaidByUserId = alex.Id, ParticipantIds = both, HouseholdId = household.Id, CreatedAt = today.AddDays(-1) }
         );
 
+        // --- Meal plan (this week) ---
+        db.Meals.AddRange(
+            new Meal { Date = today, Slot = "dinner", Title = "Chicken stir-fry", Ingredients = "chicken thighs\nbell peppers\nsoy sauce\nrice", CreatedByUserId = alex.Id, HouseholdId = household.Id },
+            new Meal { Date = today.AddDays(1), Slot = "dinner", Title = "Pasta night", Ingredients = "pasta\ntomatoes\ngarlic\nparmesan", CreatedByUserId = sam.Id, HouseholdId = household.Id },
+            new Meal { Date = today.AddDays(2), Slot = "dinner", Title = "Taco Tuesday", Ingredients = "tortillas\nground beef\nlettuce\ncheese\nsalsa", CreatedByUserId = alex.Id, HouseholdId = household.Id }
+        );
+
         await db.SaveChangesAsync();
         logger.LogInformation(
             "Seeded demo household '{Household}' (invite {Code}) with 2 members, 3 debts, 9 groceries, 6 todos, 6 chores, 8 events.",

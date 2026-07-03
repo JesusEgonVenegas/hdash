@@ -159,5 +159,6 @@ app.MapTodayEndpoints();
 app.MapDigestEndpoints();
 app.MapNoteEndpoints();
 app.MapExpenseEndpoints();
+app.MapMealEndpoints();
 
 app.Run();

@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import type { ChoreItem } from "@/types/chore";
 import type { PaymentApi } from "@/types/payment";
 import type { HouseholdNote } from "@/types/note";
+import type { ExpensesResponse } from "@/types/expense";
 
 type DebtWithBalance = {
     id: string;
@@ -37,6 +38,7 @@ type Data = {
     payments: PaymentApi[];
     chores: ChoreItem[];
     notes: HouseholdNote[];
+    expenses: ExpensesResponse;
 };
 
 const NOTE_ACCENT: Record<string, string> = {
@@ -83,15 +85,17 @@ export default function DashboardPage() {
         if (isLoading || !token) return;
         (async () => {
             try {
-                const [today, reminders, debts, payments, chores, notes] = await Promise.all([
+                const emptyExpenses = { expenses: [], balances: [], settlements: [] };
+                const [today, reminders, debts, payments, chores, notes, expenses] = await Promise.all([
                     apiFetch<Today>("/api/today", { token }),
                     apiFetch<{ items: Reminder[] }>("/api/reminders", { token }).then((r) => r.items),
                     apiFetch<DebtWithBalance[]>("/api/debts", { token }).catch(() => []),
                     apiFetch<PaymentApi[]>("/api/payments?limit=5", { token }).catch(() => []),
                     apiFetch<ChoreItem[]>("/api/chores", { token }).catch(() => []),
                     apiFetch<HouseholdNote[]>("/api/notes", { token }).catch(() => []),
+                    apiFetch<ExpensesResponse>("/api/expenses", { token }).catch(() => emptyExpenses),
                 ]);
-                setData({ today, reminders, debts, payments, chores, notes });
+                setData({ today, reminders, debts, payments, chores, notes, expenses });
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load dashboard");
             }
@@ -102,8 +106,10 @@ export default function DashboardPage() {
     if (error) return <div className="ascii-error font-mono">[ERROR] {error}</div>;
     if (!data) return null;
 
-    const { today, reminders, debts, payments, chores, notes } = data;
+    const { today, reminders, debts, payments, chores, notes, expenses } = data;
     const now = new Date();
+
+    const myNet = expenses.balances.find((b) => b.userId === user?.id)?.net ?? 0;
 
     // Prefer pinned notes; fall back to the latest couple as a peek.
     const pinned = notes.filter((n) => n.pinned);
@@ -251,6 +257,21 @@ export default function DashboardPage() {
                         </ul>
                     )}
                 </div>
+
+                {/* SPLIT / EXPENSES */}
+                <Link href="/expenses" className="border border-neutral-800 hover:border-neutral-600 p-4 flex flex-col">
+                    <h2 className="text-green-400 text-sm mb-3">{"> "}SHARED EXPENSES</h2>
+                    {myNet > 0 ? (
+                        <p className="text-sm text-neutral-300">you&rsquo;re owed <span className="text-green-400 tabular-nums font-bold">{money(myNet)}</span></p>
+                    ) : myNet < 0 ? (
+                        <p className="text-sm text-neutral-300">you owe <span className="text-red-400 tabular-nums font-bold">{money(-myNet)}</span></p>
+                    ) : (
+                        <p className="text-sm text-neutral-500">all settled up ✓</p>
+                    )}
+                    {expenses.settlements.length > 0 && (
+                        <p className="text-neutral-600 text-xs mt-2">{expenses.settlements.length} settlement{expenses.settlements.length !== 1 ? "s" : ""} pending</p>
+                    )}
+                </Link>
 
                 {/* RECENT PAYMENTS */}
                 {recentPayments.length > 0 && (
