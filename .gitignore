@@ -43,6 +43,8 @@ next-env.d.ts
 # Build results
 backend/bin/
 backend/obj/
+backend.Tests/bin/
+backend.Tests/obj/
 
 # User-specific files
 backend/*.user
