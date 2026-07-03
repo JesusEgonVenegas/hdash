@@ -32,7 +32,8 @@ export default function NavBar() {
             .catch(() => setReminderCount(0));
     }, [token, pathname]);
 
-    if (pathname === "/login" || pathname === "/register" || pathname === "/onboarding") return null;
+    const hideOn = ["/login", "/register", "/onboarding", "/forgot-password", "/reset-password", "/verify-email"];
+    if (hideOn.includes(pathname)) return null;
     if (isLoading) return null;
 
     return (

@@ -185,13 +185,15 @@ hdash/
 
 ## Roadmap
 
-Built for a household you run yourself. To open it to the public, the honest gaps are:
+Built for a household you run yourself. Progress toward opening it to the public:
 
-- [ ] Email verification + password reset (only JWT login exists today)
+- [x] Email verification + password reset (Identity tokens, generic replies, no account enumeration)
 - [ ] Login rate-limiting / brute-force protection
 - [ ] Per-user digest send-hour (opt-in exists; hour is currently global)
 - [ ] Real token revocation (logout is currently client-side only)
 - [ ] Automated backups for the SQLite volume
+
+> Email verification is wired but **not enforced** by default — set `Auth:RequireConfirmedEmail=true` to require a confirmed address before sign-in.
 
 > Status: `dev` is the active branch; feature work lands via PR.
 

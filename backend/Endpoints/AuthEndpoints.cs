@@ -4,6 +4,7 @@ using System.Text;
 using backend.Data;
 using backend.DTOs.Auth;
 using backend.Models;
+using backend.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +13,10 @@ namespace backend.Endpoints;
 
 public static class AuthEndpoints
 {
+    // Generic reply for reset/verification requests so an attacker can't probe
+    // which email addresses have accounts (no account enumeration).
+    private const string GenericSentReply = "If that email has an account, a message is on its way.";
+
     public static RouteGroupBuilder MapAuthEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/auth");
@@ -20,13 +25,18 @@ public static class AuthEndpoints
         group.MapPost("/login", Login);
         group.MapGet("/me", GetCurrentUser).RequireAuthorization();
         group.MapPost("/logout", Logout).RequireAuthorization();
+        group.MapPost("/forgot-password", ForgotPassword);
+        group.MapPost("/reset-password", ResetPassword);
+        group.MapPost("/confirm-email", ConfirmEmail);
+        group.MapPost("/resend-verification", ResendVerification);
 
         return group;
     }
 
     private static async Task<IResult> Register(
         RegisterRequest request,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        AuthMailer mailer)
     {
         if (string.IsNullOrWhiteSpace(request.Email))
             return Results.BadRequest(new { errors = new[] { "Email is required." } });
@@ -51,7 +61,77 @@ public static class AuthEndpoints
             });
         }
 
-        return Results.Ok(new { message = "Registration successful" });
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        await mailer.SendVerificationAsync(user, token);
+
+        return Results.Ok(new { message = "Registration successful. Check your email to confirm your address." });
+    }
+
+    private static async Task<IResult> ForgotPassword(
+        ForgotPasswordRequest request,
+        UserManager<ApplicationUser> userManager,
+        AuthMailer mailer)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email ?? "");
+        if (user is not null)
+        {
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            await mailer.SendPasswordResetAsync(user, token);
+        }
+        return Results.Ok(new { message = GenericSentReply });
+    }
+
+    private static async Task<IResult> ResetPassword(
+        ResetPasswordRequest request,
+        UserManager<ApplicationUser> userManager)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email ?? "");
+        if (user is null)
+            return Results.BadRequest(new { errors = new[] { "Invalid or expired reset link." } });
+
+        string token;
+        try { token = TokenCodec.Decode(request.Token); }
+        catch { return Results.BadRequest(new { errors = new[] { "Invalid or expired reset link." } }); }
+
+        var result = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
+        return result.Succeeded
+            ? Results.Ok(new { message = "Password updated. You can now sign in." })
+            : Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+    }
+
+    private static async Task<IResult> ConfirmEmail(
+        ConfirmEmailRequest request,
+        UserManager<ApplicationUser> userManager)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email ?? "");
+        if (user is null)
+            return Results.BadRequest(new { errors = new[] { "Invalid or expired confirmation link." } });
+
+        if (user.EmailConfirmed)
+            return Results.Ok(new { message = "Email already confirmed." });
+
+        string token;
+        try { token = TokenCodec.Decode(request.Token); }
+        catch { return Results.BadRequest(new { errors = new[] { "Invalid or expired confirmation link." } }); }
+
+        var result = await userManager.ConfirmEmailAsync(user, token);
+        return result.Succeeded
+            ? Results.Ok(new { message = "Email confirmed. You're all set." })
+            : Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+    }
+
+    private static async Task<IResult> ResendVerification(
+        ResendVerificationRequest request,
+        UserManager<ApplicationUser> userManager,
+        AuthMailer mailer)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email ?? "");
+        if (user is not null && !user.EmailConfirmed)
+        {
+            var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            await mailer.SendVerificationAsync(user, token);
+        }
+        return Results.Ok(new { message = GenericSentReply });
     }
 
     private static async Task<IResult> Login(
@@ -64,6 +144,9 @@ public static class AuthEndpoints
 
         if (user is null || !await userManager.CheckPasswordAsync(user, request.Password))
             return Results.Unauthorized();
+
+        if (configuration.GetValue("Auth:RequireConfirmedEmail", false) && !user.EmailConfirmed)
+            return Results.Json(new { error = "Please confirm your email before signing in." }, statusCode: 403);
 
         // Load household info for the user
         await db.Entry(user).Reference(u => u.Household).LoadAsync();

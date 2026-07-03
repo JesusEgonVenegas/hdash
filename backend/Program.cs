@@ -72,6 +72,7 @@ if (string.Equals(builder.Configuration["Email:Provider"], "smtp", StringCompari
 else
     builder.Services.AddSingleton<backend.Services.Email.IEmailSender, backend.Services.Email.FileEmailSender>();
 builder.Services.AddHostedService<backend.Services.Digest.DigestScheduler>();
+builder.Services.AddScoped<backend.Services.Email.AuthMailer>();
 
 // CORS — reads allowed origins from config (comma-separated)
 var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:3000")
