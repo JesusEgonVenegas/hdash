@@ -88,6 +88,10 @@ Nothing on the books today. Enjoy the quiet. ✓</td></tr>");
         if (d.Grocery.Count > 0)
             sb.Append(GroceryBlock(d));
 
+        // Pinboard
+        if (d.Notes.Count > 0)
+            sb.Append(NotesBlock(d));
+
         // Footer
         sb.Append($@"
 <tr><td style=""padding:18px 28px 24px;border-top:1px solid {Line};font-family:{SansFont};font-size:12px;color:{Muted};text-align:center;"">
@@ -152,6 +156,22 @@ Compiled by HDASH · <a href=""#"" style=""color:{Accent};text-decoration:none;"
 <span style=""font-family:{SansFont};font-size:13px;color:{Muted};""> items waiting</span>
 <div style=""font-family:{Font};font-size:14px;color:{Ink};padding-top:6px;"">{names}</div>
 </td></tr>";
+    }
+
+    private string NotesBlock(HouseholdDigest d)
+    {
+        var rows = new StringBuilder();
+        foreach (var n in d.Notes)
+        {
+            rows.Append($@"
+<tr><td style=""padding:8px 12px;border-left:3px solid #d4a72c;background:#faf8f2;"">
+<div style=""font-family:{Font};font-size:14px;color:{Ink};"">{Enc(n.Content)}</div>
+<div style=""font-family:{SansFont};font-size:11px;color:{Muted};padding-top:2px;"">— {Enc(n.Author)}</div>
+</td></tr>
+<tr><td style=""height:6px;""></td></tr>");
+        }
+        return SectionHeader("From the pinboard", Accent) + $@"
+<tr><td style=""padding:8px 28px 16px;""><table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"">{rows}</table></td></tr>";
     }
 
     private static string Money(decimal v) => "$" + v.ToString("#,##0.00");

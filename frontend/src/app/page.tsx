@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import type { ChoreItem } from "@/types/chore";
 import type { PaymentApi } from "@/types/payment";
+import type { HouseholdNote } from "@/types/note";
 
 type DebtWithBalance = {
     id: string;
@@ -35,6 +36,14 @@ type Data = {
     debts: DebtWithBalance[];
     payments: PaymentApi[];
     chores: ChoreItem[];
+    notes: HouseholdNote[];
+};
+
+const NOTE_ACCENT: Record<string, string> = {
+    yellow: "border-l-yellow-500/60",
+    green: "border-l-green-500/60",
+    blue: "border-l-blue-500/60",
+    pink: "border-l-pink-500/60",
 };
 
 const SEVERITY: Record<Reminder["severity"], { label: string; cls: string }> = {
@@ -74,14 +83,15 @@ export default function DashboardPage() {
         if (isLoading || !token) return;
         (async () => {
             try {
-                const [today, reminders, debts, payments, chores] = await Promise.all([
+                const [today, reminders, debts, payments, chores, notes] = await Promise.all([
                     apiFetch<Today>("/api/today", { token }),
                     apiFetch<{ items: Reminder[] }>("/api/reminders", { token }).then((r) => r.items),
                     apiFetch<DebtWithBalance[]>("/api/debts", { token }).catch(() => []),
                     apiFetch<PaymentApi[]>("/api/payments?limit=5", { token }).catch(() => []),
                     apiFetch<ChoreItem[]>("/api/chores", { token }).catch(() => []),
+                    apiFetch<HouseholdNote[]>("/api/notes", { token }).catch(() => []),
                 ]);
-                setData({ today, reminders, debts, payments, chores });
+                setData({ today, reminders, debts, payments, chores, notes });
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load dashboard");
             }
@@ -92,8 +102,12 @@ export default function DashboardPage() {
     if (error) return <div className="ascii-error font-mono">[ERROR] {error}</div>;
     if (!data) return null;
 
-    const { today, reminders, debts, payments, chores } = data;
+    const { today, reminders, debts, payments, chores, notes } = data;
     const now = new Date();
+
+    // Prefer pinned notes; fall back to the latest couple as a peek.
+    const pinned = notes.filter((n) => n.pinned);
+    const boardPeek = (pinned.length > 0 ? pinned : notes).slice(0, 3);
 
     const totalOwed = debts.reduce((s, d) => s + d.balance, 0);
     const monthlyInterest = debts.reduce((s, d) => s + (d.balance * d.interestRate) / 1200, 0);
@@ -166,6 +180,24 @@ export default function DashboardPage() {
                     </ul>
                 )}
             </div>
+
+            {/* PINBOARD PEEK */}
+            {boardPeek.length > 0 && (
+                <div className="border border-neutral-800 p-4">
+                    <div className="flex items-baseline justify-between mb-3">
+                        <h2 className="text-green-400 text-sm">{"> "}PINBOARD</h2>
+                        <Link href="/notes" className="text-neutral-600 hover:text-green-400 text-xs">board →</Link>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {boardPeek.map((n) => (
+                            <div key={n.id} className={`border-l-2 ${NOTE_ACCENT[n.color] ?? NOTE_ACCENT.yellow} bg-neutral-900/40 pl-3 pr-2 py-2`}>
+                                <p className="text-neutral-200 text-sm break-words line-clamp-3">{n.pinned && "📌 "}{n.content}</p>
+                                <p className="text-neutral-600 text-[11px] mt-1">{n.createdByName ?? "someone"}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* THE LEDGER */}

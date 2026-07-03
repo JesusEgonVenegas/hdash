@@ -66,6 +66,23 @@ public class DeparturesDigestRenderer : IDigestRenderer
 
         sb.Append("</table></td></tr>");
 
+        // Bulletins (pinboard notes)
+        if (d.Notes.Count > 0)
+        {
+            var notes = new StringBuilder();
+            foreach (var n in d.Notes)
+                notes.Append($@"
+<tr><td style=""padding:7px 8px;border-bottom:1px solid #191c21;"">
+<span style=""font-family:{Mono};font-size:12px;color:{White};"">{Enc(n.Content)}</span>
+<span style=""font-family:{Mono};font-size:10px;letter-spacing:1px;color:{Muted};""> — {Enc(n.Author.ToUpperInvariant())}</span>
+</td></tr>");
+            sb.Append($@"
+<tr><td style=""padding:2px 12px 10px;"">
+<div style=""font-family:{Mono};font-size:9px;letter-spacing:2px;color:{Muted};padding:8px;border-bottom:1px solid {LineC};"">BULLETINS</div>
+<table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"">{notes}</table>
+</td></tr>");
+        }
+
         // Footer strip: ledger + grocery summary
         var nextFare = d.Debts.Count > 0 ? d.Debts[0].NextDueLabel : "—";
         sb.Append($@"

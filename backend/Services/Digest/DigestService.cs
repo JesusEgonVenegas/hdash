@@ -40,7 +40,8 @@ public class DigestService
             todos: _db.TodoItems.Where(t => t.HouseholdId == household.Id),
             events: _db.CalendarEvents.Where(e => e.HouseholdId == household.Id),
             grocery: _db.GroceryItems.Where(g => g.HouseholdId == household.Id),
-            debts: _db.Debts.Where(d => memberIds.Contains(d.UserId)));
+            debts: _db.Debts.Where(d => memberIds.Contains(d.UserId)),
+            notes: _db.HouseholdNotes.Where(n => n.HouseholdId == household.Id).Include(n => n.CreatedBy));
     }
 
     public async Task<HouseholdDigest> BuildForUserAsync(ApplicationUser user, DateTime today)
@@ -58,13 +59,15 @@ public class DigestService
             todos: _db.TodoItems.Where(t => t.CreatedByUserId == user.Id && t.HouseholdId == null),
             events: _db.CalendarEvents.Where(e => e.CreatedByUserId == user.Id && e.HouseholdId == null),
             grocery: _db.GroceryItems.Where(g => g.UserId == user.Id && g.HouseholdId == null),
-            debts: _db.Debts.Where(d => d.UserId == user.Id));
+            debts: _db.Debts.Where(d => d.UserId == user.Id),
+            notes: _db.HouseholdNotes.Where(n => n.CreatedByUserId == user.Id && n.HouseholdId == null).Include(n => n.CreatedBy));
     }
 
     private async Task<HouseholdDigest> AssembleAsync(
         string name, IReadOnlyList<string> emails, DateTime today,
         IQueryable<ChoreItem> chores, IQueryable<TodoItem> todos,
-        IQueryable<CalendarEvent> events, IQueryable<GroceryItem> grocery, IQueryable<Debt> debts)
+        IQueryable<CalendarEvent> events, IQueryable<GroceryItem> grocery, IQueryable<Debt> debts,
+        IQueryable<HouseholdNote> notes)
     {
         var choreList = await chores.ToListAsync();
         var todoList = await todos.ToListAsync();
@@ -124,8 +127,15 @@ public class DigestService
             .Select(g => new DigestGrocery(g.Name, g.Quantity, g.Category))
             .ToList();
 
+        // Pinned notes lead; a couple recent ones fill in. Keep it short for an email.
+        var noteList = (await notes.ToListAsync())
+            .OrderByDescending(n => n.Pinned).ThenByDescending(n => n.UpdatedAt)
+            .Take(4)
+            .Select(n => new DigestNote(n.Content, n.CreatedBy?.DisplayName ?? "someone"))
+            .ToList();
+
         return new HouseholdDigest(name, today, emails, overdue, agenda,
-            digestDebts, totalOwed, monthlyInterest, paidToDate, groceryItems);
+            digestDebts, totalOwed, monthlyInterest, paidToDate, groceryItems, noteList);
     }
 
     private static string Severity(int days) => days < 0 ? "overdue" : days == 0 ? "due" : "upcoming";
