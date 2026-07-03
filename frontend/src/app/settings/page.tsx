@@ -6,7 +6,19 @@ import { apiFetch } from "@/lib/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5063";
 
-type Settings = { digestOptIn: boolean; activeSkin: string; schedulerEnabled: boolean };
+type Settings = {
+    digestOptIn: boolean;
+    digestHour: number | null;
+    defaultHour: number;
+    activeSkin: string;
+    schedulerEnabled: boolean;
+};
+
+function hourLabel(h: number) {
+    const period = h < 12 ? "am" : "pm";
+    const hr = h % 12 === 0 ? 12 : h % 12;
+    return `${hr}:00 ${period}`;
+}
 
 export default function SettingsPage() {
     const { token, isLoading, user } = useAuth();
@@ -22,15 +34,20 @@ export default function SettingsPage() {
             .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
     }, [token, isLoading]);
 
-    async function toggleOptIn() {
+    async function save(patch: Partial<Pick<Settings, "digestOptIn" | "digestHour">>, note: string) {
         if (!settings || !token) return;
-        const next = !settings.digestOptIn;
-        setSettings({ ...settings, digestOptIn: next });
+        const prev = settings;
+        const next = { ...settings, ...patch };
+        setSettings(next);
         try {
-            await apiFetch("/api/digest/settings", { token, method: "PUT", body: { digestOptIn: next } });
-            flashMsg(next ? "Daily digest on." : "Daily digest off.");
+            await apiFetch("/api/digest/settings", {
+                token,
+                method: "PUT",
+                body: { digestOptIn: next.digestOptIn, digestHour: next.digestHour },
+            });
+            flashMsg(note);
         } catch {
-            setSettings({ ...settings, digestOptIn: !next });
+            setSettings(prev);
             setError("Could not save that.");
         }
     }
@@ -94,7 +111,7 @@ export default function SettingsPage() {
 
                 {/* Opt-in toggle */}
                 <button
-                    onClick={toggleOptIn}
+                    onClick={() => save({ digestOptIn: !settings!.digestOptIn }, !settings!.digestOptIn ? "Daily digest on." : "Daily digest off.")}
                     className="flex items-center justify-between w-full border border-neutral-700 hover:border-neutral-500 px-3 py-2 text-sm"
                 >
                     <span className="text-neutral-300">Email me the daily digest</span>
@@ -102,6 +119,30 @@ export default function SettingsPage() {
                         {settings?.digestOptIn ? "[ ON ]" : "[ OFF ]"}
                     </span>
                 </button>
+
+                {/* Send hour */}
+                {settings?.digestOptIn && (
+                    <label className="flex items-center justify-between w-full border border-neutral-800 px-3 py-2 text-sm">
+                        <span className="text-neutral-400">Deliver at</span>
+                        <select
+                            value={settings.digestHour ?? ""}
+                            onChange={(e) =>
+                                save(
+                                    { digestHour: e.target.value === "" ? null : Number(e.target.value) },
+                                    "Delivery time updated."
+                                )
+                            }
+                            className="bg-neutral-900 border border-neutral-700 text-neutral-200 px-2 py-1 focus:outline-none focus:border-green-400"
+                        >
+                            <option value="">household default ({hourLabel(settings.defaultHour)})</option>
+                            {Array.from({ length: 24 }, (_, h) => (
+                                <option key={h} value={h} className="bg-neutral-900">
+                                    {hourLabel(h)}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                )}
 
                 <div className="flex flex-wrap gap-3">
                     <button

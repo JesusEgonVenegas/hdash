@@ -57,6 +57,23 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+// Rate limiting — throttle sensitive auth endpoints per client IP to blunt
+// brute-force and credential-stuffing. Applied via .RequireRateLimiting("auth").
+var authPermitPerMinute = builder.Configuration.GetValue("Auth:RateLimit:PermitPerMinute", 10);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", httpContext =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = authPermitPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+});
+
 // Daily email digest pipeline (data -> render -> send -> schedule).
 builder.Services.AddScoped<backend.Services.Digest.DigestService>();
 builder.Services.AddScoped<backend.Services.Digest.DigestDispatcher>();
@@ -105,6 +122,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

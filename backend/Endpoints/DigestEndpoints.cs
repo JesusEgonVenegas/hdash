@@ -17,7 +17,7 @@ public static class DigestEndpoints
         return group;
     }
 
-    public record DigestSettingsDto(bool DigestOptIn);
+    public record DigestSettingsDto(bool DigestOptIn, int? DigestHour);
 
     private static async Task<IResult> GetSettings(
         AppDbContext db, IConfiguration config, ClaimsPrincipal principal)
@@ -27,6 +27,8 @@ public static class DigestEndpoints
         return Results.Ok(new
         {
             digestOptIn = user.DigestOptIn,
+            digestHour = user.DigestHour,                       // null = use default
+            defaultHour = config.GetValue("Digest:Hour", 6),
             activeSkin = config["Digest:Skin"] ?? "departures",
             schedulerEnabled = config.GetValue("Digest:Enabled", false),
         });
@@ -37,9 +39,13 @@ public static class DigestEndpoints
     {
         var user = await CurrentUser(db, principal);
         if (user is null) return Results.Unauthorized();
+        if (dto.DigestHour is < 0 or > 23)
+            return Results.BadRequest(new { error = "Hour must be between 0 and 23." });
+
         user.DigestOptIn = dto.DigestOptIn;
+        user.DigestHour = dto.DigestHour;
         await db.SaveChangesAsync();
-        return Results.Ok(new { digestOptIn = user.DigestOptIn });
+        return Results.Ok(new { digestOptIn = user.DigestOptIn, digestHour = user.DigestHour });
     }
 
     // Renders the caller's digest as HTML so it can be opened in a browser tab.

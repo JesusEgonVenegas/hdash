@@ -188,8 +188,8 @@ hdash/
 Built for a household you run yourself. Progress toward opening it to the public:
 
 - [x] Email verification + password reset (Identity tokens, generic replies, no account enumeration)
-- [ ] Login rate-limiting / brute-force protection
-- [ ] Per-user digest send-hour (opt-in exists; hour is currently global)
+- [x] Login rate-limiting / brute-force protection (per-IP, `Auth:RateLimit:PermitPerMinute`)
+- [x] Per-user digest send-hour (each person picks their own delivery time)
 - [ ] Real token revocation (logout is currently client-side only)
 - [ ] Automated backups for the SQLite volume
 

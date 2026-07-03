@@ -21,14 +21,15 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/api/auth");
 
-        group.MapPost("/register", Register);
-        group.MapPost("/login", Login);
+        // Sensitive, unauthenticated endpoints are rate-limited per IP.
+        group.MapPost("/register", Register).RequireRateLimiting("auth");
+        group.MapPost("/login", Login).RequireRateLimiting("auth");
         group.MapGet("/me", GetCurrentUser).RequireAuthorization();
         group.MapPost("/logout", Logout).RequireAuthorization();
-        group.MapPost("/forgot-password", ForgotPassword);
-        group.MapPost("/reset-password", ResetPassword);
-        group.MapPost("/confirm-email", ConfirmEmail);
-        group.MapPost("/resend-verification", ResendVerification);
+        group.MapPost("/forgot-password", ForgotPassword).RequireRateLimiting("auth");
+        group.MapPost("/reset-password", ResetPassword).RequireRateLimiting("auth");
+        group.MapPost("/confirm-email", ConfirmEmail).RequireRateLimiting("auth");
+        group.MapPost("/resend-verification", ResendVerification).RequireRateLimiting("auth");
 
         return group;
     }
