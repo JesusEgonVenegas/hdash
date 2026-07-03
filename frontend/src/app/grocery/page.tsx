@@ -5,6 +5,22 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import type { GroceryItem } from "@/types/grocery";
 
+const AISLES = ["Produce", "Dairy", "Meat", "Bakery", "Pantry", "Frozen", "Household", "Other"];
+
+// Group items by aisle, ordered by the AISLES list (known aisles first, then any custom ones).
+function groupByAisle(items: GroceryItem[]): [string, GroceryItem[]][] {
+    const groups = new Map<string, GroceryItem[]>();
+    for (const item of items) {
+        const aisle = item.category?.trim() || "Other";
+        (groups.get(aisle) ?? groups.set(aisle, []).get(aisle)!).push(item);
+    }
+    return [...groups.entries()].sort((a, b) => {
+        const ia = AISLES.indexOf(a[0]);
+        const ib = AISLES.indexOf(b[0]);
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib) || a[0].localeCompare(b[0]);
+    });
+}
+
 export default function GroceryPage() {
     const { token, user, isLoading } = useAuth();
     const [items, setItems] = useState<GroceryItem[]>([]);
@@ -13,6 +29,7 @@ export default function GroceryPage() {
 
     const [newName, setNewName] = useState("");
     const [newQuantity, setNewQuantity] = useState("");
+    const [newCategory, setNewCategory] = useState("");
     const [adding, setAdding] = useState(false);
 
     const loadItems = useCallback(async () => {
@@ -45,6 +62,7 @@ export default function GroceryPage() {
                 body: {
                     name: newName.trim(),
                     quantity: parseInt(newQuantity) || 1,
+                    category: newCategory.trim() || null,
                 },
                 token,
             });
@@ -152,7 +170,20 @@ export default function GroceryPage() {
                             autoFocus
                         />
                     </div>
-                    <div className="w-20">
+                    <div className="w-28">
+                        <label className="block text-sm text-neutral-400 mb-1">AISLE:</label>
+                        <input
+                            value={newCategory}
+                            onChange={(e) => setNewCategory(e.target.value)}
+                            placeholder="Produce"
+                            list="grocery-aisles"
+                            className="w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400"
+                        />
+                        <datalist id="grocery-aisles">
+                            {AISLES.map((a) => <option key={a} value={a} />)}
+                        </datalist>
+                    </div>
+                    <div className="w-16">
                         <label className="block text-sm text-neutral-400 mb-1">QTY:</label>
                         <input
                             value={newQuantity}
@@ -181,15 +212,24 @@ export default function GroceryPage() {
             )}
 
             {uncheckedItems.length > 0 && (
-                <div className="border border-neutral-700 p-4 space-y-1">
-                    {uncheckedItems.map((item) => (
-                        <GroceryRow
-                            key={item.id}
-                            item={item}
-                            currentUserId={user?.id}
-                            onToggle={handleToggle}
-                            onDelete={handleDelete}
-                        />
+                <div className="border border-neutral-700 p-4 space-y-4">
+                    {groupByAisle(uncheckedItems).map(([aisle, aisleItems]) => (
+                        <div key={aisle}>
+                            <div className="text-green-400/70 text-xs uppercase tracking-widest mb-1 border-b border-neutral-800 pb-1">
+                                {aisle}
+                            </div>
+                            <div className="space-y-1">
+                                {aisleItems.map((item) => (
+                                    <GroceryRow
+                                        key={item.id}
+                                        item={item}
+                                        currentUserId={user?.id}
+                                        onToggle={handleToggle}
+                                        onDelete={handleDelete}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}

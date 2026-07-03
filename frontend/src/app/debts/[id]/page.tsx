@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -56,53 +56,61 @@ export default function DebtDetailPage() {
     }
 
     return (
-        <section className="text-white p-6 space-y-6">
-            <h1 className="text-2xl font-bold">{debt.name}</h1>
+        <section className="space-y-6 font-mono">
+            <div className="flex items-center justify-between border-b border-neutral-700 pb-2">
+                <h1 className="text-lg text-green-400">{"> "}{debt.name}</h1>
+                <Link href="/debts" className="text-neutral-500 hover:text-green-400 text-sm">← debts</Link>
+            </div>
 
-            <div className="bg-gray-800 p-4 rounded space-y-2">
-                <p><strong>Balance:</strong> ${(debt.balance ?? debt.startingAmount)?.toLocaleString()}</p>
-                <p><strong>Starting Amount:</strong> ${debt.startingAmount?.toLocaleString()}</p>
-                <p><strong>Paid So Far:</strong> ${(debt.paidTotal ?? 0)?.toLocaleString()}</p>
-                <p><strong>Interest Rate:</strong> {debt.interestRate}% APR</p>
-                <p><strong>Min Payment:</strong> ${debt.minPayment.toLocaleString()}</p>
-                <p><strong>Due Day:</strong> {debt.dueDay}</p>
+            <div className="border border-neutral-700 p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                <Field label="balance" value={`$${(debt.balance ?? debt.startingAmount)?.toLocaleString()}`} highlight />
+                <Field label="starting" value={`$${debt.startingAmount?.toLocaleString()}`} />
+                <Field label="paid so far" value={`$${(debt.paidTotal ?? 0)?.toLocaleString()}`} />
+                <Field label="apr" value={`${debt.interestRate}%`} />
+                <Field label="min payment" value={`$${debt.minPayment.toLocaleString()}`} />
+                <Field label="due day" value={debt.dueDay} />
             </div>
 
             <AddPaymentForm debtId={id} />
 
-            <section className="bg-gray-900 p-4 rounded">
-                <h2 className="text-xl font-semibold mb-2">Payment History</h2>
-                {payments.length === 0 && <p>No payments yet.</p>}
-                <ul className="space-y-2">
-                    {payments.map((p: any) => (
-                        <li key={p.id} className="border-b border-gray-700 pb-2 flex justify-between">
-                            <div>
-                                <p><strong>Date:</strong> {new Date(p.paidAt).toLocaleDateString()}</p>
-                                <p><strong>Amount:</strong> ${p.amount.toLocaleString()}</p>
-                            </div>
+            <div className="border border-neutral-700 p-4">
+                <h2 className="text-sm text-neutral-300 mb-3">{"> "}PAYMENT HISTORY</h2>
+                {payments.length === 0 ? (
+                    <p className="text-neutral-500 text-sm">no payments yet.</p>
+                ) : (
+                    <ul className="divide-y divide-neutral-800">
+                        {payments.map((p: any) => (
+                            <li key={p.id} className="py-2 flex items-center justify-between text-sm">
+                                <span className="text-neutral-400 tabular-nums">{new Date(p.paidAt).toLocaleDateString()}</span>
+                                <span className="text-white tabular-nums">${p.amount.toLocaleString()}</span>
+                                <span className="flex items-center gap-3">
+                                    <Link href={`/payments/${p.id}/edit`} className="text-neutral-500 hover:text-green-400 text-xs">edit</Link>
+                                    <DeletePaymentButton id={p.id} />
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
 
-                            <DeletePaymentButton id={p.id} />
-                            <Link
-                                href={`/payments/${p.id}/edit`}
-                                className="text-blue-400 hover:text-blue-500 ml-4"
-                            >
-                                Edit
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            </section>
-
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
                 <Link
                     href={`/debts/${id}/edit`}
-                    className="inline-block bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+                    className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 py-1.5 text-sm"
                 >
-                    Edit Debt
+                    [ EDIT DEBT ]
                 </Link>
-
                 <DeleteDebtButton id={id} />
             </div>
         </section>
+    );
+}
+
+function Field({ label, value, highlight = false }: { label: string; value: ReactNode; highlight?: boolean }) {
+    return (
+        <div>
+            <div className="text-xs text-neutral-500 uppercase tracking-wide">{label}</div>
+            <div className={`tabular-nums ${highlight ? "text-green-400 text-base" : "text-neutral-200"}`}>{value}</div>
+        </div>
     );
 }
