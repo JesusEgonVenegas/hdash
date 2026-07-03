@@ -79,9 +79,9 @@ public static class GroceryEndpoints
 
         var item = new GroceryItem
         {
-            Name = request.Name.Trim(),
+            Name = CapitalizeFirst(request.Name),
             Quantity = request.Quantity > 0 ? request.Quantity : 1,
-            Category = request.Category?.Trim(),
+            Category = NormalizeAisle(request.Category),
             UserId = userId,
             HouseholdId = user.HouseholdId,
         };
@@ -123,13 +123,13 @@ public static class GroceryEndpoints
         if (!CanAccess(user, item)) return Results.Forbid();
 
         if (request.Name is not null)
-            item.Name = request.Name.Trim();
+            item.Name = CapitalizeFirst(request.Name);
         if (request.Quantity is not null)
             item.Quantity = request.Quantity.Value > 0 ? request.Quantity.Value : 1;
         if (request.IsChecked is not null)
             item.IsChecked = request.IsChecked.Value;
         if (request.Category is not null)
-            item.Category = request.Category.Trim();
+            item.Category = NormalizeAisle(request.Category);
 
         item.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -248,5 +248,21 @@ public static class GroceryEndpoints
             return true;
 
         return false;
+    }
+
+    // "toilet paper" -> "Toilet paper" (only the first character, so brand-ish
+    // names like "iPhone charger" keep their internal capitals).
+    private static string CapitalizeFirst(string s)
+    {
+        s = s.Trim();
+        return s.Length == 0 ? s : char.ToUpper(s[0]) + s[1..];
+    }
+
+    // Canonicalize an aisle so casing can't fragment groups:
+    // "pantry" / "PANTRY" / "Pantry" all become "Pantry".
+    private static string? NormalizeAisle(string? s)
+    {
+        s = s?.Trim();
+        return string.IsNullOrEmpty(s) ? null : char.ToUpper(s[0]) + s[1..].ToLower();
     }
 }

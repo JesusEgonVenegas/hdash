@@ -7,11 +7,19 @@ import type { GroceryItem } from "@/types/grocery";
 
 const AISLES = ["Produce", "Dairy", "Meat", "Bakery", "Pantry", "Frozen", "Household", "Other"];
 
+// Canonical, case-insensitive aisle label so "pantry"/"PANTRY"/"Pantry" all merge.
+function canonicalAisle(raw?: string | null): string {
+    const t = (raw ?? "").trim();
+    if (!t) return "Other";
+    const known = AISLES.find((a) => a.toLowerCase() === t.toLowerCase());
+    return known ?? t[0].toUpperCase() + t.slice(1);
+}
+
 // Group items by aisle, ordered by the AISLES list (known aisles first, then any custom ones).
 function groupByAisle(items: GroceryItem[]): [string, GroceryItem[]][] {
     const groups = new Map<string, GroceryItem[]>();
     for (const item of items) {
-        const aisle = item.category?.trim() || "Other";
+        const aisle = canonicalAisle(item.category);
         (groups.get(aisle) ?? groups.set(aisle, []).get(aisle)!).push(item);
     }
     return [...groups.entries()].sort((a, b) => {
