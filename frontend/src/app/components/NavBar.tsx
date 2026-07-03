@@ -93,6 +93,15 @@ export default function NavBar() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Command palette hint */}
+                        <button
+                            onClick={() => window.dispatchEvent(new Event("hdash:command"))}
+                            className="hidden sm:flex items-center gap-1 border border-neutral-800 hover:border-neutral-600 px-1.5 py-0.5 text-[11px] text-neutral-500"
+                            title="Command palette"
+                        >
+                            <span>⌘K</span>
+                        </button>
+
                         {/* Desktop user menu */}
                         {user && (
                             <div className="hidden sm:block relative" ref={userMenuRef}>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavBar from "./components/NavBar";
+import CommandPalette from "./components/CommandPalette";
 import { AuthProvider } from "@/lib/auth-context";
 
 const geistMono = Geist_Mono({
@@ -26,6 +27,7 @@ export default function RootLayout({
             >
                 <AuthProvider>
                     <NavBar />
+                    <CommandPalette />
                     <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">{children}</main>
                 </AuthProvider>
             </body>

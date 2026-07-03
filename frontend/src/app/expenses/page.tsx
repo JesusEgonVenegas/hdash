@@ -68,6 +68,16 @@ export default function ExpensesPage() {
         await load();
     }
 
+    // Settling = a balancing expense (debtor "pays" the creditor) that zeroes them out.
+    async function settle(fromId: string, toId: string, amount: number) {
+        await apiFetch("/api/expenses", {
+            method: "POST",
+            body: { description: "Settled up 💸", amount, paidByUserId: fromId, participantIds: [toId] },
+            token,
+        });
+        await load();
+    }
+
     function toggleSplit(id: string) {
         setSplit((prev) => {
             const next = new Set(prev);
@@ -111,7 +121,15 @@ export default function ExpensesPage() {
                                     <span className="text-neutral-500"> owes </span>
                                     <span className="text-green-400">{s.toName}</span>
                                 </span>
-                                <span className="text-white tabular-nums">{money(s.amount)}</span>
+                                <span className="flex items-center gap-3">
+                                    <span className="text-white tabular-nums">{money(s.amount)}</span>
+                                    <button
+                                        onClick={() => settle(s.fromId, s.toId, s.amount)}
+                                        className="border border-neutral-700 hover:border-green-400 hover:text-green-400 text-neutral-400 text-xs px-2 py-0.5"
+                                    >
+                                        settle
+                                    </button>
+                                </span>
                             </li>
                         ))}
                     </ul>
