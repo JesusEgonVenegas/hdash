@@ -121,7 +121,15 @@ export default function ExpensesPage() {
         <section className="space-y-6 font-mono">
             <div className="flex items-baseline justify-between border-b border-neutral-700 pb-2">
                 <h1 className="text-green-400 text-lg font-bold tracking-wider">EXPENSES</h1>
-                <span className="text-neutral-500 text-sm">{user?.householdName ?? "personal"}</span>
+                <span className="text-neutral-500 text-sm">
+                    {data?.summary && data.summary.monthCount > 0 && (
+                        <span className="text-neutral-400">
+                            this month <span className="text-white tabular-nums">{money(data.summary.monthTotal)}</span>
+                            <span className="text-neutral-600"> · {data.summary.monthCount} · </span>
+                        </span>
+                    )}
+                    {user?.householdName ?? "personal"}
+                </span>
             </div>
 
             {error && <div className="text-red-400 text-sm border border-red-500/40 px-3 py-2">[ERROR] {error}</div>}

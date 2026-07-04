@@ -28,6 +28,7 @@ export interface ExpensesResponse {
     expenses: Expense[];
     balances: Balance[];
     settlements: Settlement[];
+    summary: { monthTotal: number; monthCount: number };
 }
 
 export interface RecurringExpense {

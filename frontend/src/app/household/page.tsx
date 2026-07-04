@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import type { Household } from "@/types/household";
+import MemberDot from "../components/MemberDot";
 
 export default function HouseholdPage() {
     const { token, user, isLoading, refreshUser } = useAuth();
@@ -308,6 +309,7 @@ export default function HouseholdPage() {
                             className="flex justify-between items-center py-2 border-b border-neutral-800"
                         >
                             <div className="flex items-center gap-2">
+                                <MemberDot color={member.color} />
                                 <span className="text-white text-sm">{member.displayName}</span>
                                 <span className="text-neutral-600 text-xs">{member.email}</span>
                                 {member.isOwner && (

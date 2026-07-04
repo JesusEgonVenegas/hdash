@@ -51,6 +51,11 @@ public static class ExpenseEndpoints
             .OrderByDescending(b => b.net)
             .ToList();
 
+        // Month spend = real expenses only (a settlement transfer has the payer NOT among participants).
+        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+        var spend = expenses.Where(e => e.Participants().Contains(e.PaidByUserId)).ToList();
+        var monthSpend = spend.Where(e => e.CreatedAt >= monthStart).ToList();
+
         return Results.Ok(new
         {
             expenses = expenses.Select(e => new
@@ -67,6 +72,11 @@ public static class ExpenseEndpoints
             }),
             balances,
             settlements = SettleUp(net, names),
+            summary = new
+            {
+                monthTotal = Math.Round(monthSpend.Sum(e => e.Amount), 2),
+                monthCount = monthSpend.Count,
+            },
         });
     }
 
