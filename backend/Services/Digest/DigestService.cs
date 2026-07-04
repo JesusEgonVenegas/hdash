@@ -33,6 +33,12 @@ public class DigestService
         var memberIds = members.Select(m => m.Id).ToList();
         // Content is shared across the household, but only opted-in members get emailed.
         var emails = members.Where(m => m.DigestOptIn && m.Email is not null).Select(m => m.Email!).ToList();
+        var names = members.ToDictionary(m => m.Id, m => m.DisplayName);
+
+        var expenses = await _db.Expenses.Where(e => e.HouseholdId == household.Id).ToListAsync();
+        var settlements = SettleUp(expenses, memberIds, names);
+        var meals = await LoadMealsAsync(
+            _db.Meals.Where(m => m.HouseholdId == household.Id), today);
 
         return await AssembleAsync(
             household.Name, emails, today,
@@ -41,7 +47,8 @@ public class DigestService
             events: _db.CalendarEvents.Where(e => e.HouseholdId == household.Id),
             grocery: _db.GroceryItems.Where(g => g.HouseholdId == household.Id),
             debts: _db.Debts.Where(d => memberIds.Contains(d.UserId)),
-            notes: _db.HouseholdNotes.Where(n => n.HouseholdId == household.Id).Include(n => n.CreatedBy));
+            notes: _db.HouseholdNotes.Where(n => n.HouseholdId == household.Id).Include(n => n.CreatedBy),
+            settlements: settlements, meals: meals);
     }
 
     public async Task<HouseholdDigest> BuildForUserAsync(ApplicationUser user, DateTime today)
@@ -60,14 +67,17 @@ public class DigestService
             events: _db.CalendarEvents.Where(e => e.CreatedByUserId == user.Id && e.HouseholdId == null),
             grocery: _db.GroceryItems.Where(g => g.UserId == user.Id && g.HouseholdId == null),
             debts: _db.Debts.Where(d => d.UserId == user.Id),
-            notes: _db.HouseholdNotes.Where(n => n.CreatedByUserId == user.Id && n.HouseholdId == null).Include(n => n.CreatedBy));
+            notes: _db.HouseholdNotes.Where(n => n.CreatedByUserId == user.Id && n.HouseholdId == null).Include(n => n.CreatedBy),
+            settlements: new List<DigestSettlement>(),
+            meals: await LoadMealsAsync(_db.Meals.Where(m => m.CreatedByUserId == user.Id && m.HouseholdId == null), today));
     }
 
     private async Task<HouseholdDigest> AssembleAsync(
         string name, IReadOnlyList<string> emails, DateTime today,
         IQueryable<ChoreItem> chores, IQueryable<TodoItem> todos,
         IQueryable<CalendarEvent> events, IQueryable<GroceryItem> grocery, IQueryable<Debt> debts,
-        IQueryable<HouseholdNote> notes)
+        IQueryable<HouseholdNote> notes,
+        IReadOnlyList<DigestSettlement> settlements, IReadOnlyList<DigestMeal> meals)
     {
         var choreList = await chores.ToListAsync();
         var todoList = await todos.ToListAsync();
@@ -135,7 +145,52 @@ public class DigestService
             .ToList();
 
         return new HouseholdDigest(name, today, emails, overdue, agenda,
-            digestDebts, totalOwed, monthlyInterest, paidToDate, groceryItems, noteList);
+            digestDebts, totalOwed, monthlyInterest, paidToDate, groceryItems, noteList, settlements, meals);
+    }
+
+    private static async Task<List<DigestMeal>> LoadMealsAsync(IQueryable<Meal> mealsQuery, DateTime today)
+    {
+        var end = today.AddDays(7);
+        var rows = await mealsQuery
+            .Where(m => m.Date >= today && m.Date < end)
+            .OrderBy(m => m.Date).Take(7).ToListAsync();
+        return rows.Select(m => new DigestMeal(m.Date.ToString("ddd"), m.Title)).ToList();
+    }
+
+    // Net balances -> greedy settle-up. Mirrors the /api/expenses logic.
+    private static List<DigestSettlement> SettleUp(
+        List<Expense> expenses, IReadOnlyList<string> memberIds, Dictionary<string, string> names)
+    {
+        var net = memberIds.ToDictionary(id => id, _ => 0m);
+        foreach (var e in expenses)
+        {
+            var parts = e.Participants();
+            if (parts.Count == 0) continue;
+            var share = e.Amount / parts.Count;
+            if (net.ContainsKey(e.PaidByUserId)) net[e.PaidByUserId] += e.Amount;
+            foreach (var p in parts) if (net.ContainsKey(p)) net[p] -= share;
+        }
+
+        var debtors = net.Where(kv => Math.Round(kv.Value, 2) < 0)
+            .Select(kv => (id: kv.Key, amt: -Math.Round(kv.Value, 2))).OrderByDescending(x => x.amt).ToList();
+        var creditors = net.Where(kv => Math.Round(kv.Value, 2) > 0)
+            .Select(kv => (id: kv.Key, amt: Math.Round(kv.Value, 2))).OrderByDescending(x => x.amt).ToList();
+
+        var result = new List<DigestSettlement>();
+        int i = 0, j = 0;
+        while (i < debtors.Count && j < creditors.Count)
+        {
+            var pay = Math.Min(debtors[i].amt, creditors[j].amt);
+            if (pay > 0)
+                result.Add(new DigestSettlement(
+                    names.GetValueOrDefault(debtors[i].id, "someone"),
+                    names.GetValueOrDefault(creditors[j].id, "someone"), Math.Round(pay, 2)));
+            debtors[i] = (debtors[i].id, debtors[i].amt - pay);
+            creditors[j] = (creditors[j].id, creditors[j].amt - pay);
+            if (debtors[i].amt <= 0) i++;
+            if (creditors[j].amt <= 0) j++;
+        }
+        return result;
     }
 
     private static string Severity(int days) => days < 0 ? "overdue" : days == 0 ? "due" : "upcoming";

@@ -66,6 +66,31 @@ public class DeparturesDigestRenderer : IDigestRenderer
 
         sb.Append("</table></td></tr>");
 
+        // Settle-up tabs
+        if (d.Settlements.Count > 0)
+        {
+            var tabs = new StringBuilder();
+            foreach (var s in d.Settlements)
+                tabs.Append($@"
+<tr><td style=""padding:7px 8px;border-bottom:1px solid #191c21;"">
+<span style=""font-family:{Mono};font-size:12px;color:{Red};"">{Enc(s.From.ToUpperInvariant())}</span>
+<span style=""font-family:{Mono};font-size:11px;color:{Muted};""> owes </span>
+<span style=""font-family:{Mono};font-size:12px;color:{Green};"">{Enc(s.To.ToUpperInvariant())}</span></td>
+<td align=""right"" style=""padding:7px 8px;border-bottom:1px solid #191c21;font-family:{Mono};font-size:12px;color:{Amber};"">{Money(s.Amount)}</td></tr>");
+            sb.Append(Section("TABS", tabs.ToString()));
+        }
+
+        // On the menu (meals this week)
+        if (d.Meals.Count > 0)
+        {
+            var menu = new StringBuilder();
+            foreach (var m in d.Meals)
+                menu.Append($@"
+<tr><td style=""padding:6px 8px;border-bottom:1px solid #191c21;width:48px;font-family:{Mono};font-size:11px;color:{Muted};"">{Enc(m.Day.ToUpperInvariant())}</td>
+<td style=""padding:6px 8px;border-bottom:1px solid #191c21;font-family:{Mono};font-size:12px;color:{White};"">{Enc(m.Title)}</td></tr>");
+            sb.Append(Section("ON THE MENU", menu.ToString()));
+        }
+
         // Bulletins (pinboard notes)
         if (d.Notes.Count > 0)
         {
@@ -102,6 +127,12 @@ COMPILED BY HDASH · <a href=""#"" style=""color:{Green};text-decoration:none;""
         sb.Append("</table></td></tr></table></body></html>");
         return sb.ToString();
     }
+
+    private string Section(string label, string rowsHtml) => $@"
+<tr><td style=""padding:2px 12px 10px;"">
+<div style=""font-family:{Mono};font-size:9px;letter-spacing:2px;color:{Muted};padding:8px;border-bottom:1px solid {LineC};"">{label}</div>
+<table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"">{rowsHtml}</table>
+</td></tr>";
 
     private string BoardRow(DigestItem item)
     {

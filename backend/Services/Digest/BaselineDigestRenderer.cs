@@ -84,6 +84,14 @@ Nothing on the books today. Enjoy the quiet. ✓</td></tr>");
         if (d.Debts.Count > 0)
             sb.Append(LedgerBlock(d));
 
+        // Settle up
+        if (d.Settlements.Count > 0)
+            sb.Append(SettlementsBlock(d));
+
+        // Meals this week
+        if (d.Meals.Count > 0)
+            sb.Append(MealsBlock(d));
+
         // Grocery
         if (d.Grocery.Count > 0)
             sb.Append(GroceryBlock(d));
@@ -172,6 +180,29 @@ Compiled by HDASH · <a href=""#"" style=""color:{Accent};text-decoration:none;"
         }
         return SectionHeader("From the pinboard", Accent) + $@"
 <tr><td style=""padding:8px 28px 16px;""><table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"">{rows}</table></td></tr>";
+    }
+
+    private string SettlementsBlock(HouseholdDigest d)
+    {
+        var rows = new StringBuilder();
+        foreach (var s in d.Settlements)
+            rows.Append($@"
+<tr><td style=""font-family:{Font};font-size:14px;color:{Ink};padding:6px 0;border-bottom:1px solid {Line};"">
+<span style=""color:{Red};"">{Enc(s.From)}</span> owes <span style=""color:{Accent};"">{Enc(s.To)}</span></td>
+<td align=""right"" style=""font-family:{SansFont};font-size:14px;color:{Ink};padding:6px 0;border-bottom:1px solid {Line};"">{Money(s.Amount)}</td></tr>");
+        return SectionHeader("Settle up", Accent) + $@"
+<tr><td style=""padding:8px 28px 4px;""><table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"">{rows}</table></td></tr>";
+    }
+
+    private string MealsBlock(HouseholdDigest d)
+    {
+        var rows = new StringBuilder();
+        foreach (var m in d.Meals)
+            rows.Append($@"
+<tr><td style=""font-family:{SansFont};font-size:12px;color:{Muted};padding:5px 0;width:52px;"">{Enc(m.Day)}</td>
+<td style=""font-family:{Font};font-size:14px;color:{Ink};padding:5px 0;"">{Enc(m.Title)}</td></tr>");
+        return SectionHeader("On the menu", Accent) + $@"
+<tr><td style=""padding:8px 28px 4px;""><table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"">{rows}</table></td></tr>";
     }
 
     private static string Money(decimal v) => "$" + v.ToString("#,##0.00");

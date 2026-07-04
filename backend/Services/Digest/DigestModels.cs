@@ -17,10 +17,13 @@ public record HouseholdDigest(
     decimal MonthlyInterest,
     decimal PaidToDate,
     IReadOnlyList<DigestGrocery> Grocery,
-    IReadOnlyList<DigestNote> Notes)
+    IReadOnlyList<DigestNote> Notes,
+    IReadOnlyList<DigestSettlement> Settlements,
+    IReadOnlyList<DigestMeal> Meals)
 {
     public bool HasAnything =>
-        Overdue.Count > 0 || Agenda.Count > 0 || Debts.Count > 0 || Grocery.Count > 0 || Notes.Count > 0;
+        Overdue.Count > 0 || Agenda.Count > 0 || Debts.Count > 0 || Grocery.Count > 0
+        || Notes.Count > 0 || Settlements.Count > 0 || Meals.Count > 0;
 }
 
 /// <summary>A single actionable line: a chore, todo, or calendar event.</summary>
@@ -41,3 +44,7 @@ public record DigestDebt(
 public record DigestGrocery(string Name, int Quantity, string? Category);
 
 public record DigestNote(string Content, string Author);
+
+public record DigestSettlement(string From, string To, decimal Amount);
+
+public record DigestMeal(string Day, string Title);
