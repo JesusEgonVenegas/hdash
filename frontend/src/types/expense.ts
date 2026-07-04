@@ -5,6 +5,7 @@ export interface Expense {
     paidByUserId: string;
     paidByName: string | null;
     paidByColor?: string | null;
+    category?: string | null;
     participantIds: string[];
     share: number;
     createdAt: string;
@@ -28,7 +29,11 @@ export interface ExpensesResponse {
     expenses: Expense[];
     balances: Balance[];
     settlements: Settlement[];
-    summary: { monthTotal: number; monthCount: number };
+    summary: {
+        monthTotal: number;
+        monthCount: number;
+        byCategory: { category: string; total: number }[];
+    };
 }
 
 export interface RecurringExpense {

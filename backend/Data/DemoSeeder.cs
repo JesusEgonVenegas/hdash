@@ -136,9 +136,9 @@ public static class DemoSeeder
         // --- Shared expenses ---
         var both = $"{alex.Id},{sam.Id}";
         db.Expenses.AddRange(
-            new Expense { Description = "Groceries", Amount = 60m, PaidByUserId = sam.Id, ParticipantIds = both, HouseholdId = household.Id, CreatedAt = today.AddDays(-3) },
-            new Expense { Description = "Internet bill", Amount = 120m, PaidByUserId = alex.Id, ParticipantIds = both, HouseholdId = household.Id, CreatedAt = today.AddDays(-2) },
-            new Expense { Description = "Dinner out", Amount = 45m, PaidByUserId = alex.Id, ParticipantIds = both, HouseholdId = household.Id, CreatedAt = today.AddDays(-1) }
+            new Expense { Description = "Groceries", Amount = 60m, Category = "Food", PaidByUserId = sam.Id, ParticipantIds = both, HouseholdId = household.Id, CreatedAt = today.AddDays(-3) },
+            new Expense { Description = "Internet bill", Amount = 120m, Category = "Utilities", PaidByUserId = alex.Id, ParticipantIds = both, HouseholdId = household.Id, CreatedAt = today.AddDays(-2) },
+            new Expense { Description = "Dinner out", Amount = 45m, Category = "Food", PaidByUserId = alex.Id, ParticipantIds = both, HouseholdId = household.Id, CreatedAt = today.AddDays(-1) }
         );
 
         // --- Meal plan (this week) ---
@@ -150,7 +150,7 @@ public static class DemoSeeder
 
         db.RecurringExpenses.Add(new RecurringExpense
         {
-            Description = "Rent", Amount = 1800m, Cadence = "monthly",
+            Description = "Rent", Amount = 1800m, Cadence = "monthly", Category = "Rent",
             PaidByUserId = alex.Id, ParticipantIds = both,
             NextRunDate = today.AddMonths(1), HouseholdId = household.Id,
         });

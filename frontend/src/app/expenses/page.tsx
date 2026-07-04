@@ -8,6 +8,8 @@ import type { ExpensesResponse, RecurringExpense } from "@/types/expense";
 import type { Household, HouseholdMember } from "@/types/household";
 import MemberDot from "../components/MemberDot";
 
+const EXPENSE_CATEGORIES = ["Food", "Rent", "Utilities", "Household", "Transport", "Fun", "Health", "Other"];
+
 export default function ExpensesPage() {
     const { token, user, isLoading } = useAuth();
     const [data, setData] = useState<ExpensesResponse | null>(null);
@@ -17,10 +19,12 @@ export default function ExpensesPage() {
 
     const [recDesc, setRecDesc] = useState("");
     const [recAmount, setRecAmount] = useState("");
+    const [recCategory, setRecCategory] = useState("");
     const [recCadence, setRecCadence] = useState<"weekly" | "monthly">("monthly");
 
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("");
+    const [category, setCategory] = useState("");
     const [paidBy, setPaidBy] = useState("");
     const [split, setSplit] = useState<Set<string>>(new Set());
     const [posting, setPosting] = useState(false);
@@ -58,11 +62,12 @@ export default function ExpensesPage() {
         try {
             await apiFetch("/api/expenses", {
                 method: "POST",
-                body: { description: description.trim(), amount: amt, paidByUserId: paidBy, participantIds: [...split] },
+                body: { description: description.trim(), amount: amt, category: category.trim() || null, paidByUserId: paidBy, participantIds: [...split] },
                 token,
             });
             setDescription("");
             setAmount("");
+            setCategory("");
             await load();
         } catch {
             setError("Could not add that expense.");
@@ -91,11 +96,12 @@ export default function ExpensesPage() {
         if (!recDesc.trim() || !(amt > 0)) return;
         await apiFetch("/api/expenses/recurring", {
             method: "POST",
-            body: { description: recDesc.trim(), amount: amt, cadence: recCadence },
+            body: { description: recDesc.trim(), amount: amt, cadence: recCadence, category: recCategory.trim() || null },
             token,
         });
         setRecDesc("");
         setRecAmount("");
+        setRecCategory("");
         await load();
     }
 
@@ -171,6 +177,32 @@ export default function ExpensesPage() {
             </div>
 
             {/* ADD EXPENSE */}
+            {/* THIS MONTH BREAKDOWN */}
+            {data && data.summary.byCategory.length > 0 && (
+                <div className="border border-neutral-800 p-4">
+                    <div className="flex items-baseline justify-between mb-3">
+                        <h2 className="text-green-400 text-sm">{"> "}THIS MONTH</h2>
+                        <span className="text-white text-sm tabular-nums">{money(data.summary.monthTotal)}</span>
+                    </div>
+                    <div className="space-y-1.5">
+                        {data.summary.byCategory.map((c) => {
+                            const pct = data.summary.monthTotal > 0 ? (c.total / data.summary.monthTotal) * 100 : 0;
+                            return (
+                                <div key={c.category} className="text-xs">
+                                    <div className="flex justify-between text-neutral-400 mb-0.5">
+                                        <span>{c.category}</span>
+                                        <span className="tabular-nums">{money(c.total)} · {pct.toFixed(0)}%</span>
+                                    </div>
+                                    <div className="h-1.5 bg-neutral-800">
+                                        <div className="h-full bg-green-400/60" style={{ width: `${pct}%` }} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             <form onSubmit={add} className="border border-neutral-800 p-4 space-y-3">
                 <h2 className="text-neutral-300 text-sm">{"> "}ADD EXPENSE</h2>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -180,6 +212,16 @@ export default function ExpensesPage() {
                         placeholder="what was it for?"
                         className="flex-1 bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400 text-sm"
                     />
+                    <input
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        list="expense-categories"
+                        placeholder="category"
+                        className="w-32 bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400 text-sm"
+                    />
+                    <datalist id="expense-categories">
+                        {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c} />)}
+                    </datalist>
                     <input
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
@@ -251,6 +293,8 @@ export default function ExpensesPage() {
                 <div className="flex flex-wrap gap-2 items-center">
                     <input value={recDesc} onChange={(e) => setRecDesc(e.target.value)} placeholder="rent, internet…"
                         className="flex-1 min-w-[120px] bg-transparent border border-neutral-700 px-3 py-1.5 text-white placeholder:text-neutral-600 text-sm focus:outline-none focus:border-green-400" />
+                    <input value={recCategory} onChange={(e) => setRecCategory(e.target.value)} list="expense-categories" placeholder="category"
+                        className="w-28 bg-transparent border border-neutral-700 px-3 py-1.5 text-white placeholder:text-neutral-600 text-sm focus:outline-none focus:border-green-400" />
                     <input value={recAmount} onChange={(e) => setRecAmount(e.target.value)} type="number" step="0.01" min="0" placeholder="0.00"
                         className="w-24 bg-transparent border border-neutral-700 px-3 py-1.5 text-white placeholder:text-neutral-600 text-sm focus:outline-none focus:border-green-400" />
                     <select value={recCadence} onChange={(e) => setRecCadence(e.target.value as "weekly" | "monthly")}
@@ -277,6 +321,7 @@ export default function ExpensesPage() {
                             <li key={e.id} className="py-2 flex items-center justify-between text-sm group">
                                 <div className="min-w-0">
                                     <span className="text-white">{e.description}</span>
+                                    {e.category && <span className="ml-2 text-[10px] uppercase tracking-wide text-neutral-500 border border-neutral-700 px-1.5 py-0.5">{e.category}</span>}
                                     <div className="text-neutral-500 text-xs flex items-center gap-1">
                                         <MemberDot color={e.paidByColor} />
                                         <span>{e.paidByUserId === user?.id ? "you" : e.paidByName} paid · {money(e.share)}/person · {e.participantIds.length} way</span>

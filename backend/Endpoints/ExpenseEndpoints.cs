@@ -19,8 +19,14 @@ public static class ExpenseEndpoints
         return group;
     }
 
-    public record CreateExpenseRequest(string Description, decimal Amount, string? PaidByUserId, List<string>? ParticipantIds);
-    public record CreateRecurringRequest(string Description, decimal Amount, string Cadence, string? PaidByUserId, List<string>? ParticipantIds);
+    public record CreateExpenseRequest(string Description, decimal Amount, string? PaidByUserId, List<string>? ParticipantIds, string? Category = null);
+    public record CreateRecurringRequest(string Description, decimal Amount, string Cadence, string? PaidByUserId, List<string>? ParticipantIds, string? Category = null);
+
+    private static string? NormalizeCategory(string? c)
+    {
+        c = c?.Trim();
+        return string.IsNullOrEmpty(c) ? null : char.ToUpper(c[0]) + c[1..].ToLower();
+    }
 
     private static async Task<IResult> GetExpenses(AppDbContext db, ClaimsPrincipal principal)
     {
@@ -66,6 +72,7 @@ public static class ExpenseEndpoints
                 e.PaidByUserId,
                 PaidByName = e.PaidBy?.DisplayName,
                 PaidByColor = e.PaidBy?.Color,
+                e.Category,
                 ParticipantIds = e.Participants(),
                 Share = e.Participants().Count > 0 ? Math.Round(e.Amount / e.Participants().Count, 2) : e.Amount,
                 e.CreatedAt,
@@ -76,6 +83,11 @@ public static class ExpenseEndpoints
             {
                 monthTotal = Math.Round(monthSpend.Sum(e => e.Amount), 2),
                 monthCount = monthSpend.Count,
+                byCategory = monthSpend
+                    .GroupBy(e => e.Category ?? "Uncategorized")
+                    .Select(g => new { category = g.Key, total = Math.Round(g.Sum(e => e.Amount), 2) })
+                    .OrderByDescending(x => x.total)
+                    .ToList(),
             },
         });
     }
@@ -99,6 +111,7 @@ public static class ExpenseEndpoints
         {
             Description = req.Description.Trim(),
             Amount = req.Amount,
+            Category = NormalizeCategory(req.Category),
             PaidByUserId = payer,
             ParticipantIds = string.Join(",", participants),
             HouseholdId = user.HouseholdId,
@@ -188,6 +201,7 @@ public static class ExpenseEndpoints
         {
             Description = req.Description.Trim(),
             Amount = req.Amount,
+            Category = NormalizeCategory(req.Category),
             Cadence = cadence,
             PaidByUserId = payer,
             ParticipantIds = string.Join(",", participants),
@@ -229,6 +243,7 @@ public static class ExpenseEndpoints
                 {
                     Description = r.Description,
                     Amount = r.Amount,
+                    Category = r.Category,
                     PaidByUserId = r.PaidByUserId,
                     ParticipantIds = r.ParticipantIds,
                     HouseholdId = r.HouseholdId,

@@ -9,6 +9,7 @@ public class Expense
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Description { get; set; } = string.Empty;
     public decimal Amount { get; set; }
+    public string? Category { get; set; }
 
     public string PaidByUserId { get; set; } = string.Empty;
     public ApplicationUser PaidBy { get; set; } = null!;
