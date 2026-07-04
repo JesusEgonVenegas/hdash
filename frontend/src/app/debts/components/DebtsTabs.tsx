@@ -6,9 +6,10 @@ import { usePathname } from "next/navigation";
 const tabs = [
     { href: "/debts", label: "debts" },
     { href: "/payments", label: "payments" },
+    { href: "/expenses", label: "expenses" },
 ];
 
-/** Tab bar unifying the debts + payments views into one section. */
+/** Tab bar unifying the money section: debts + payments (personal) + expenses (shared). */
 export default function DebtsTabs() {
     const pathname = usePathname();
     return (

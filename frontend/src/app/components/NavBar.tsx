@@ -15,16 +15,15 @@ const primaryLinks = [
     { href: "/chores", label: "chores" },
     { href: "/calendar", label: "calendar" },
     { href: "/notes", label: "notes" },
-    { href: "/debts", label: "debts" },
-    { href: "/expenses", label: "expenses" },
+    { href: "/debts", label: "money" },
 ];
 
 const hideOn = ["/login", "/register", "/onboarding", "/forgot-password", "/reset-password", "/verify-email"];
 
 function isActive(href: string, pathname: string): boolean {
     if (href === "/") return pathname === "/";
-    // Debts owns the payments sub-view.
-    if (href === "/debts") return pathname.startsWith("/debts") || pathname.startsWith("/payments");
+    // The "money" section spans debts, payments, and expenses.
+    if (href === "/debts") return pathname.startsWith("/debts") || pathname.startsWith("/payments") || pathname.startsWith("/expenses");
     return pathname.startsWith(href);
 }
 

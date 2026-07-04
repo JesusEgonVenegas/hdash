@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import type { ExpensesResponse, RecurringExpense } from "@/types/expense";
 import type { Household, HouseholdMember } from "@/types/household";
 import MemberDot from "../components/MemberDot";
+import DebtsTabs from "../debts/components/DebtsTabs";
 
 const EXPENSE_CATEGORIES = ["Food", "Rent", "Utilities", "Household", "Transport", "Fun", "Health", "Other"];
 
@@ -125,6 +126,7 @@ export default function ExpensesPage() {
 
     return (
         <section className="space-y-6 font-mono">
+            <DebtsTabs />
             <div className="flex items-baseline justify-between border-b border-neutral-700 pb-2">
                 <h1 className="text-green-400 text-lg font-bold tracking-wider">EXPENSES</h1>
                 <span className="text-neutral-500 text-sm">
