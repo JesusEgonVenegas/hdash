@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import type { HouseholdNote } from "@/types/note";
+import MemberDot from "../components/MemberDot";
 
 const COLORS: HouseholdNote["color"][] = ["yellow", "green", "blue", "pink"];
 
@@ -49,7 +50,8 @@ function NoteCard({
                 </button>
             </div>
             <div className="flex items-center justify-between text-[11px] text-neutral-500 mt-auto pt-1 border-t border-white/10">
-                <span>
+                <span className="flex items-center gap-1">
+                    <MemberDot color={note.createdByColor} />
                     {note.createdByName ?? "someone"} · {new Date(note.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                 </span>
                 <span className="flex items-center gap-2">

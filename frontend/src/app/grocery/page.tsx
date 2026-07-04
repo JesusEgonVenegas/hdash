@@ -8,6 +8,22 @@ import FoodTabs from "./components/FoodTabs";
 
 const AISLES = ["Produce", "Dairy", "Meat", "Bakery", "Pantry", "Frozen", "Household", "Other"];
 
+// One-tap staples households re-buy constantly, pre-categorized to the right aisle.
+const STAPLES: { name: string; category: string }[] = [
+    { name: "Milk", category: "Dairy" },
+    { name: "Eggs", category: "Dairy" },
+    { name: "Butter", category: "Dairy" },
+    { name: "Bread", category: "Bakery" },
+    { name: "Bananas", category: "Produce" },
+    { name: "Onions", category: "Produce" },
+    { name: "Chicken", category: "Meat" },
+    { name: "Rice", category: "Pantry" },
+    { name: "Pasta", category: "Pantry" },
+    { name: "Coffee", category: "Pantry" },
+    { name: "Toilet paper", category: "Household" },
+    { name: "Dish soap", category: "Household" },
+];
+
 // Canonical, case-insensitive aisle label so "pantry"/"PANTRY"/"Pantry" all merge.
 function canonicalAisle(raw?: string | null): string {
     const t = (raw ?? "").trim();
@@ -82,6 +98,19 @@ export default function GroceryPage() {
             setError(err.data?.error ?? err.message ?? "Failed to add item");
         } finally {
             setAdding(false);
+        }
+    }
+
+    async function addStaple(name: string, category: string) {
+        try {
+            const created = await apiFetch<GroceryItem>("/api/grocery", {
+                method: "POST",
+                body: { name, quantity: 1, category },
+                token,
+            });
+            setItems((prev) => [created, ...prev]);
+        } catch (err: any) {
+            setError(err.data?.error ?? err.message ?? "Failed to add item");
         }
     }
 
@@ -212,6 +241,29 @@ export default function GroceryPage() {
                         {adding ? "..." : "[ ADD ]"}
                     </button>
                 </form>
+
+                {/* QUICK-ADD STAPLES */}
+                {(() => {
+                    const onList = new Set(items.filter((i) => !i.isChecked).map((i) => i.name.toLowerCase()));
+                    const available = STAPLES.filter((s) => !onList.has(s.name.toLowerCase()));
+                    if (available.length === 0) return null;
+                    return (
+                        <div className="mt-3 pt-3 border-t border-neutral-800">
+                            <div className="text-neutral-600 text-xs mb-2">quick add</div>
+                            <div className="flex flex-wrap gap-1.5">
+                                {available.map((s) => (
+                                    <button
+                                        key={s.name}
+                                        onClick={() => addStaple(s.name, s.category)}
+                                        className="border border-neutral-700 hover:border-green-400 hover:text-green-400 text-neutral-400 text-xs px-2 py-1"
+                                    >
+                                        + {s.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* UNCHECKED ITEMS */}

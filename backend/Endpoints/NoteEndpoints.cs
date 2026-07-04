@@ -113,6 +113,7 @@ public static class NoteEndpoints
         n.Color,
         n.CreatedByUserId,
         CreatedByName = n.CreatedBy?.DisplayName,
+        CreatedByColor = n.CreatedBy?.Color,
         n.CreatedAt,
         n.UpdatedAt,
     };

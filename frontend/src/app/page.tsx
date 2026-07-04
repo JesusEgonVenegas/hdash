@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import MemberDot from "./components/MemberDot";
 import { apiFetch } from "@/lib/api";
 import type { ChoreItem } from "@/types/chore";
 import type { PaymentApi } from "@/types/payment";
@@ -211,7 +212,9 @@ export default function DashboardPage() {
                         {boardPeek.map((n) => (
                             <div key={n.id} className={`border-l-2 ${NOTE_ACCENT[n.color] ?? NOTE_ACCENT.yellow} bg-neutral-900/40 pl-3 pr-2 py-2`}>
                                 <p className="text-neutral-200 text-sm break-words line-clamp-3">{n.pinned && "📌 "}{n.content}</p>
-                                <p className="text-neutral-600 text-[11px] mt-1">{n.createdByName ?? "someone"}</p>
+                                <p className="text-neutral-600 text-[11px] mt-1 flex items-center gap-1">
+                                    <MemberDot color={n.createdByColor} />{n.createdByName ?? "someone"}
+                                </p>
                             </div>
                         ))}
                     </div>

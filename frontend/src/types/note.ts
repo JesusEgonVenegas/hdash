@@ -5,6 +5,7 @@ export interface HouseholdNote {
     color: "yellow" | "green" | "blue" | "pink";
     createdByUserId: string;
     createdByName: string | null;
+    createdByColor?: string | null;
     createdAt: string;
     updatedAt: string;
 }
