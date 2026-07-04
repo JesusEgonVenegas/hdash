@@ -137,6 +137,9 @@ export default function ExpensesPage() {
                         </span>
                     )}
                     {user?.householdName ?? "personal"}
+                    {data?.splitMode === "proportional" && (
+                        <span className="ml-2 text-[10px] uppercase tracking-wide text-green-400 border border-green-400/40 px-1.5 py-0.5">by income</span>
+                    )}
                 </span>
             </div>
 
@@ -309,7 +312,9 @@ export default function ExpensesPage() {
                         + recurring
                     </button>
                 </div>
-                <p className="text-neutral-600 text-xs mt-2">split equally among the household · logged automatically when due</p>
+                <p className="text-neutral-600 text-xs mt-2">
+                    {data?.splitMode === "proportional" ? "split by income" : "split equally"} among the household · logged automatically when due
+                </p>
             </div>
 
             {/* HISTORY */}
@@ -326,7 +331,12 @@ export default function ExpensesPage() {
                                     {e.category && <span className="ml-2 text-[10px] uppercase tracking-wide text-neutral-500 border border-neutral-700 px-1.5 py-0.5">{e.category}</span>}
                                     <div className="text-neutral-500 text-xs flex items-center gap-1">
                                         <MemberDot color={e.paidByColor} />
-                                        <span>{e.paidByUserId === user?.id ? "you" : e.paidByName} paid · {money(e.share)}/person · {e.participantIds.length} way</span>
+                                        <span>
+                                            {e.paidByUserId === user?.id ? "you" : e.paidByName} paid ·{" "}
+                                            {data.splitMode === "proportional"
+                                                ? `split by income · ${e.participantIds.length} way`
+                                                : `${money(e.share)}/person · ${e.participantIds.length} way`}
+                                        </span>
                                     </div>
                                 </div>
                                 <span className="flex items-center gap-3 shrink-0">

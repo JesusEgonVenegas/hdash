@@ -9,6 +9,10 @@ public class ApplicationUser : IdentityUser
     // Personal accent color for attribution across the app.
     public string Color { get; set; } = "green";
 
+    // Monthly income, used to weight shared expenses when the household splits
+    // proportionally. Null = not shared; treated as an equal split for this member.
+    public decimal? Income { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Whether this person receives the daily email digest.

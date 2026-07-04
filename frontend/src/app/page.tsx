@@ -94,7 +94,7 @@ export default function DashboardPage() {
         if (isLoading || !token) return;
         (async () => {
             try {
-                const emptyExpenses = { expenses: [], balances: [], settlements: [], summary: { monthTotal: 0, monthCount: 0, byCategory: [] } };
+                const emptyExpenses: ExpensesResponse = { expenses: [], balances: [], settlements: [], splitMode: "equal", summary: { monthTotal: 0, monthCount: 0, byCategory: [] } };
                 const [today, reminders, debts, payments, chores, notes, expenses, meals] = await Promise.all([
                     apiFetch<Today>("/api/today", { token }),
                     apiFetch<{ items: Reminder[] }>("/api/reminders", { token }).then((r) => r.items),

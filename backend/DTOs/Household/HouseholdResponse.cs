@@ -6,7 +6,8 @@ public record HouseholdResponse(
     string InviteCode,
     string OwnerId,
     List<HouseholdMemberInfo> Members,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string SplitMode = "equal"
 );
 
 public record HouseholdMemberInfo(
@@ -14,5 +15,6 @@ public record HouseholdMemberInfo(
     string DisplayName,
     string Email,
     bool IsOwner,
-    string Color = "green"
+    string Color = "green",
+    decimal? Income = null
 );

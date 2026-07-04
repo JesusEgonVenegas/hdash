@@ -209,10 +209,13 @@ public static class AuthEndpoints
         user.DisplayName = request.DisplayName.Trim();
         if (request.Color is not null && MemberColors.Contains(request.Color))
             user.Color = request.Color;
+        // Income is optional; omit to leave unchanged, send 0 (or negative) to clear.
+        if (request.Income.HasValue)
+            user.Income = request.Income.Value > 0 ? request.Income.Value : null;
 
         var result = await userManager.UpdateAsync(user);
         return result.Succeeded
-            ? Results.Ok(new { displayName = user.DisplayName, color = user.Color })
+            ? Results.Ok(new { displayName = user.DisplayName, color = user.Color, income = user.Income })
             : Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
     }
 

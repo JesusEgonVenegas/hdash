@@ -37,7 +37,15 @@ public static class ExpenseEndpoints
         await MaterializeDueAsync(db, user);
 
         var expenses = await Scoped(db, user).Include(e => e.PaidBy).OrderByDescending(e => e.CreatedAt).ToListAsync();
-        var names = await MemberNames(db, user);
+        var memberList = await MemberList(db, user);
+        var names = memberList.ToDictionary(m => m.Id, m => m.DisplayName);
+        var incomes = memberList.ToDictionary(m => m.Id, m => m.Income ?? 0m);
+
+        // Proportional splitting divides each expense by member income instead of per-head.
+        var household = user.HouseholdId is not null
+            ? await db.Households.FirstOrDefaultAsync(h => h.Id == user.HouseholdId)
+            : null;
+        var proportional = household?.SplitMode == "proportional";
 
         // Net balance per user: positive => owed money, negative => owes.
         var net = names.Keys.ToDictionary(id => id, _ => 0m);
@@ -45,10 +53,20 @@ public static class ExpenseEndpoints
         {
             var parts = e.Participants();
             if (parts.Count == 0) continue;
-            var share = e.Amount / parts.Count;
             if (net.ContainsKey(e.PaidByUserId)) net[e.PaidByUserId] += e.Amount;
-            foreach (var p in parts)
-                if (net.ContainsKey(p)) net[p] -= share;
+
+            // Weight per participant. Proportional only kicks in when every participant has
+            // a positive income on file; otherwise this expense falls back to an equal split
+            // (so nobody's share collapses to ~0 just because they haven't entered income).
+            var weights = parts.Select(p => incomes.GetValueOrDefault(p, 0m)).ToList();
+            var useProp = proportional && weights.All(w => w > 0);
+            var totalWeight = useProp ? weights.Sum() : parts.Count;
+            for (var i = 0; i < parts.Count; i++)
+            {
+                var w = useProp ? weights[i] : 1m;
+                var share = e.Amount * w / totalWeight;
+                if (net.ContainsKey(parts[i])) net[parts[i]] -= share;
+            }
         }
 
         var balances = net
@@ -79,6 +97,7 @@ public static class ExpenseEndpoints
             }),
             balances,
             settlements = SettleUp(net, names),
+            splitMode = proportional ? "proportional" : "equal",
             summary = new
             {
                 monthTotal = Math.Round(monthSpend.Sum(e => e.Amount), 2),
@@ -267,6 +286,11 @@ public static class ExpenseEndpoints
         user.HouseholdId is not null
             ? db.Expenses.Where(e => e.HouseholdId == user.HouseholdId)
             : db.Expenses.Where(e => e.PaidByUserId == user.Id && e.HouseholdId == null);
+
+    private static async Task<List<ApplicationUser>> MemberList(AppDbContext db, ApplicationUser user) =>
+        user.HouseholdId is not null
+            ? await db.Users.Where(u => u.HouseholdId == user.HouseholdId).ToListAsync()
+            : new List<ApplicationUser> { user };
 
     private static async Task<Dictionary<string, string>> MemberNames(AppDbContext db, ApplicationUser user) =>
         user.HouseholdId is not null

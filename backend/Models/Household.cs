@@ -8,6 +8,10 @@ public class Household
     public string Name { get; set; } = string.Empty;
     public string InviteCode { get; set; } = GenerateInviteCode();
     public string OwnerId { get; set; } = string.Empty;
+
+    // How shared expenses divide: "equal" (per-head) or "proportional" (by member income).
+    public string SplitMode { get; set; } = "equal";
+
     public ApplicationUser Owner { get; set; } = null!;
     public List<ApplicationUser> Members { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

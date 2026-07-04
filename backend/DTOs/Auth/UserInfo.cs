@@ -10,5 +10,5 @@ public record UserInfo(
     string Color = "green"
 );
 
-public record UpdateProfileRequest(string DisplayName, string? Color = null);
+public record UpdateProfileRequest(string DisplayName, string? Color = null, decimal? Income = null);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

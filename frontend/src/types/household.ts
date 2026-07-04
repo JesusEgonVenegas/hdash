@@ -5,6 +5,7 @@ export interface Household {
     ownerId: string;
     members: HouseholdMember[];
     createdAt: string;
+    splitMode?: "equal" | "proportional";
 }
 
 export interface HouseholdMember {
@@ -13,6 +14,7 @@ export interface HouseholdMember {
     email: string;
     isOwner: boolean;
     color?: string;
+    income?: number | null;
 }
 
 export interface CreateHouseholdRequest {

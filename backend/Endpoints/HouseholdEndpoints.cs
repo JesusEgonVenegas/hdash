@@ -199,6 +199,8 @@ public static class HouseholdEndpoints
             return Results.BadRequest(new { error = "Name is required." });
 
         household.Name = request.Name.Trim();
+        if (request.SplitMode is "equal" or "proportional")
+            household.SplitMode = request.SplitMode;
         await db.SaveChangesAsync();
 
         return Results.Ok(ToResponse(household, household.Members));
@@ -250,9 +252,11 @@ public static class HouseholdEndpoints
                 m.DisplayName,
                 m.Email ?? "",
                 m.Id == household.OwnerId,
-                m.Color
+                m.Color,
+                m.Income
             )).ToList(),
-            household.CreatedAt
+            household.CreatedAt,
+            household.SplitMode
         );
     }
 }

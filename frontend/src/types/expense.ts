@@ -29,6 +29,7 @@ export interface ExpensesResponse {
     expenses: Expense[];
     balances: Balance[];
     settlements: Settlement[];
+    splitMode: "equal" | "proportional";
     summary: {
         monthTotal: number;
         monthCount: number;
