@@ -111,7 +111,7 @@ public static class ExpenseEndpoints
         });
     }
 
-    private static async Task<IResult> CreateExpense(CreateExpenseRequest req, AppDbContext db, ClaimsPrincipal principal)
+    private static async Task<IResult> CreateExpense(CreateExpenseRequest req, AppDbContext db, ClaimsPrincipal principal, backend.Services.Push.PushService push)
     {
         var user = await CurrentUser(db, principal);
         if (user is null) return Results.Unauthorized();
@@ -138,6 +138,13 @@ public static class ExpenseEndpoints
 
         db.Expenses.Add(expense);
         await db.SaveChangesAsync();
+
+        // A settlement transfer = payer pays a single other person and isn't a participant.
+        // Let the person who got paid know they're square.
+        if (participants.Count == 1 && !participants.Contains(payer) && participants[0] != payer)
+            await push.SendToUserAsync(participants[0], "You got paid 💸",
+                $"{members.GetValueOrDefault(payer, "Someone")} settled up with you — ${expense.Amount:0.##}.", "/expenses");
+
         return Results.Ok(new { expense.Id });
     }
 

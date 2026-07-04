@@ -109,6 +109,8 @@ else
 builder.Services.AddHostedService<backend.Services.Digest.DigestScheduler>();
 builder.Services.AddScoped<backend.Services.Email.AuthMailer>();
 builder.Services.AddHostedService<backend.Services.BackupService>();
+builder.Services.AddSingleton<backend.Services.Push.VapidKeyProvider>();
+builder.Services.AddScoped<backend.Services.Push.PushService>();
 
 // CORS — reads allowed origins from config (comma-separated)
 var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:3000")
@@ -165,5 +167,6 @@ app.MapNoteEndpoints();
 app.MapExpenseEndpoints();
 app.MapMealEndpoints();
 app.MapFairnessEndpoints();
+app.MapPushEndpoints();
 
 app.Run();

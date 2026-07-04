@@ -151,7 +151,8 @@ public static class ChoreEndpoints
     private static async Task<IResult> CompleteChore(
         Guid id,
         AppDbContext db,
-        ClaimsPrincipal principal)
+        ClaimsPrincipal principal,
+        backend.Services.Push.PushService push)
     {
         var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -209,6 +210,10 @@ public static class ChoreEndpoints
 
         // reload assignee
         await db.Entry(item).Reference(c => c.AssignedTo).LoadAsync();
+
+        // Nudge the next person it rotated to (never yourself).
+        if (item.AssignedToUserId != userId)
+            await push.SendToUserAsync(item.AssignedToUserId, "Your turn 🧹", $"{item.Name} — you're up next.", "/chores");
 
         return Results.Ok(ToResponse(item));
     }

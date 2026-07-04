@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { MEMBER_DOT } from "../components/MemberDot";
+import { getPushStatus, enablePush, disablePush, sendTestPush, type PushStatus } from "@/lib/push";
 
 const COLORS = ["green", "blue", "yellow", "pink", "purple", "orange", "cyan", "red"];
 
@@ -36,6 +37,10 @@ export default function SettingsPage() {
     const [flash, setFlash] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Push notification state
+    const [push, setPush] = useState<PushStatus | null>(null);
+    const [pushBusy, setPushBusy] = useState(false);
+
     // Profile + security form state
     const [displayName, setDisplayName] = useState("");
     const [curPw, setCurPw] = useState("");
@@ -52,6 +57,44 @@ export default function SettingsPage() {
     useEffect(() => {
         if (user?.displayName) setDisplayName(user.displayName);
     }, [user?.displayName]);
+
+    useEffect(() => {
+        if (!token) return;
+        getPushStatus(token).then(setPush).catch(() => setPush({ supported: false, serverEnabled: false, subscribed: false }));
+    }, [token]);
+
+    async function togglePush() {
+        if (!token || !push) return;
+        setPushBusy(true);
+        setError(null);
+        try {
+            if (push.subscribed) {
+                await disablePush(token);
+                flashMsg("Push notifications off.");
+            } else {
+                await enablePush(token);
+                flashMsg("Push notifications on — you'll get nudges on this device.");
+            }
+            setPush(await getPushStatus(token));
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Could not update notifications.");
+        } finally {
+            setPushBusy(false);
+        }
+    }
+
+    async function testPush() {
+        if (!token) return;
+        setPushBusy(true);
+        try {
+            await sendTestPush(token);
+            flashMsg("Test sent — watch for a notification.");
+        } catch {
+            setError("Could not send the test push.");
+        } finally {
+            setPushBusy(false);
+        }
+    }
 
     function flashMsg(m: string) {
         setError(null);
@@ -239,6 +282,43 @@ export default function SettingsPage() {
                 >
                     [ CHANGE PASSWORD ]
                 </button>
+            </div>
+
+            {/* NOTIFICATIONS */}
+            <div className="border border-neutral-800 p-4 space-y-4">
+                <div>
+                    <h2 className="text-sm text-neutral-300">{"> "}PUSH NOTIFICATIONS</h2>
+                    <p className="text-neutral-500 text-xs mt-1">
+                        Real-time nudges on this device — your turn for a chore, someone settled up with you.
+                    </p>
+                </div>
+
+                {push && !push.supported && (
+                    <p className="text-neutral-600 text-xs">This browser doesn&rsquo;t support push notifications.</p>
+                )}
+                {push?.supported && !push.serverEnabled && (
+                    <p className="text-yellow-500/80 text-xs"><span className="text-yellow-400">[!]</span> Push isn&rsquo;t configured on the server.</p>
+                )}
+
+                {push?.supported && push.serverEnabled && (
+                    <>
+                        <button
+                            onClick={togglePush}
+                            disabled={pushBusy}
+                            className="flex items-center justify-between w-full border border-neutral-700 hover:border-neutral-500 px-3 py-2 text-sm disabled:opacity-40"
+                        >
+                            <span className="text-neutral-300">Notify me on this device</span>
+                            <span className={push.subscribed ? "text-green-400" : "text-neutral-500"}>
+                                {pushBusy ? "…" : push.subscribed ? "[ ON ]" : "[ OFF ]"}
+                            </span>
+                        </button>
+                        {push.subscribed && (
+                            <button onClick={testPush} disabled={pushBusy} className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-40">
+                                [ SEND ME A TEST ]
+                            </button>
+                        )}
+                    </>
+                )}
             </div>
 
             {/* DIGEST */}
