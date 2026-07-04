@@ -249,7 +249,8 @@ public static class HouseholdEndpoints
                 m.Id,
                 m.DisplayName,
                 m.Email ?? "",
-                m.Id == household.OwnerId
+                m.Id == household.OwnerId,
+                m.Color
             )).ToList(),
             household.CreatedAt
         );

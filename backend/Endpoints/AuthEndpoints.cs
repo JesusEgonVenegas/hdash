@@ -17,6 +17,8 @@ public static class AuthEndpoints
     // which email addresses have accounts (no account enumeration).
     private const string GenericSentReply = "If that email has an account, a message is on its way.";
 
+    public static readonly string[] MemberColors = ["green", "blue", "yellow", "pink", "purple", "orange", "cyan", "red"];
+
     public static RouteGroupBuilder MapAuthEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/auth");
@@ -53,6 +55,7 @@ public static class AuthEndpoints
             UserName = request.Email,
             Email = request.Email,
             DisplayName = request.DisplayName,
+            Color = MemberColors[(uint)request.Email.GetHashCode() % MemberColors.Length],
         };
 
         var result = await userManager.CreateAsync(user, request.Password);
@@ -190,7 +193,8 @@ public static class AuthEndpoints
             user.DisplayName,
             user.HouseholdId?.ToString(),
             user.Household?.Name,
-            user.EmailConfirmed
+            user.EmailConfirmed,
+            user.Color
         ));
     }
 
@@ -203,9 +207,12 @@ public static class AuthEndpoints
             return Results.BadRequest(new { errors = new[] { "Display name is required." } });
 
         user.DisplayName = request.DisplayName.Trim();
+        if (request.Color is not null && MemberColors.Contains(request.Color))
+            user.Color = request.Color;
+
         var result = await userManager.UpdateAsync(user);
         return result.Succeeded
-            ? Results.Ok(new { displayName = user.DisplayName })
+            ? Results.Ok(new { displayName = user.DisplayName, color = user.Color })
             : Results.BadRequest(new { errors = result.Errors.Select(e => e.Description) });
     }
 

@@ -10,6 +10,7 @@ export interface TodoItem {
     createdByName: string | null;
     assignedToUserId: string | null;
     assignedToName: string | null;
+    assignedToColor?: string | null;
     createdAt: string;
     updatedAt: string;
 }

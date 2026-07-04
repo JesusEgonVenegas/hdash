@@ -258,6 +258,7 @@ public static class ChoreEndpoints
         CreatedByName = c.CreatedBy?.DisplayName,
         c.AssignedToUserId,
         AssignedToName = c.AssignedTo?.DisplayName,
+        AssignedToColor = c.AssignedTo?.Color,
         c.IsCompletedThisCycle,
         c.NextDueDate,
         c.LastCompletedAt,

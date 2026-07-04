@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import type { ExpensesResponse, RecurringExpense } from "@/types/expense";
 import type { Household, HouseholdMember } from "@/types/household";
+import MemberDot from "../components/MemberDot";
 
 export default function ExpensesPage() {
     const { token, user, isLoading } = useAuth();
@@ -268,8 +269,9 @@ export default function ExpensesPage() {
                             <li key={e.id} className="py-2 flex items-center justify-between text-sm group">
                                 <div className="min-w-0">
                                     <span className="text-white">{e.description}</span>
-                                    <div className="text-neutral-500 text-xs">
-                                        {e.paidByUserId === user?.id ? "you" : e.paidByName} paid · {money(e.share)}/person · {e.participantIds.length} way
+                                    <div className="text-neutral-500 text-xs flex items-center gap-1">
+                                        <MemberDot color={e.paidByColor} />
+                                        <span>{e.paidByUserId === user?.id ? "you" : e.paidByName} paid · {money(e.share)}/person · {e.participantIds.length} way</span>
                                     </div>
                                 </div>
                                 <span className="flex items-center gap-3 shrink-0">

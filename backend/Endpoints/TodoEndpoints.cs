@@ -288,6 +288,7 @@ public static class TodoEndpoints
         CreatedByName = t.CreatedBy?.DisplayName,
         t.AssignedToUserId,
         AssignedToName = t.AssignedTo?.DisplayName,
+        AssignedToColor = t.AssignedTo?.Color,
         t.CreatedAt,
         t.UpdatedAt,
     };

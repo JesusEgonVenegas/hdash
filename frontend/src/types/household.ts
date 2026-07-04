@@ -12,6 +12,7 @@ export interface HouseholdMember {
     displayName: string;
     email: string;
     isOwner: boolean;
+    color?: string;
 }
 
 export interface CreateHouseholdRequest {

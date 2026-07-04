@@ -6,8 +6,9 @@ public record UserInfo(
     string DisplayName,
     string? HouseholdId = null,
     string? HouseholdName = null,
-    bool EmailConfirmed = false
+    bool EmailConfirmed = false,
+    string Color = "green"
 );
 
-public record UpdateProfileRequest(string DisplayName);
+public record UpdateProfileRequest(string DisplayName, string? Color = null);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

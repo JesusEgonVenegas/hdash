@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
 import type { ChoreItem } from "@/types/chore";
 import type { HouseholdMember, Household } from "@/types/household";
+import MemberDot from "../components/MemberDot";
 
 const FREQUENCY_LABELS: Record<string, string> = {
     daily: "daily",
@@ -430,12 +431,9 @@ function ChoreRow({
                             </span>
 
                             {item.assignedToName && (
-                                <span
-                                    className={`text-xs ${
-                                        isMyTurn ? "text-green-400" : "text-blue-400"
-                                    }`}
-                                >
-                                    {isMyTurn ? "» your turn" : `@${item.assignedToName}`}
+                                <span className={`text-xs flex items-center gap-1 ${isMyTurn ? "text-green-400" : "text-neutral-400"}`}>
+                                    <MemberDot color={item.assignedToColor} />
+                                    {isMyTurn ? "your turn" : item.assignedToName}
                                 </span>
                             )}
 

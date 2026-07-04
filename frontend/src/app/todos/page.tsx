@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import type { TodoItem } from "@/types/todo";
 import type { HouseholdMember } from "@/types/household";
 import type { Household } from "@/types/household";
+import MemberDot from "../components/MemberDot";
 
 const PRIORITY_COLORS: Record<string, string> = {
     high: "text-red-400",
@@ -455,8 +456,9 @@ function TodoRow({
                             )}
 
                             {item.assignedToName && (
-                                <span className="text-xs text-blue-400">
-                                    @{item.assignedToName}
+                                <span className="text-xs text-neutral-400 flex items-center gap-1">
+                                    <MemberDot color={item.assignedToColor} />
+                                    {item.assignedToName}
                                 </span>
                             )}
 

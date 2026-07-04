@@ -40,7 +40,9 @@ public static class DemoSeeder
         db.Households.Add(household);
 
         alex.HouseholdId = household.Id;
+        alex.Color = "blue";
         sam.HouseholdId = household.Id;
+        sam.Color = "pink";
         await userManager.UpdateAsync(alex);
         await userManager.UpdateAsync(sam);
 

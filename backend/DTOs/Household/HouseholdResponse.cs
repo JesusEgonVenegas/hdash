@@ -13,5 +13,6 @@ public record HouseholdMemberInfo(
     string Id,
     string DisplayName,
     string Email,
-    bool IsOwner
+    bool IsOwner,
+    string Color = "green"
 );

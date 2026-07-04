@@ -7,6 +7,7 @@ export interface ChoreItem {
     createdByName: string | null;
     assignedToUserId: string;
     assignedToName: string | null;
+    assignedToColor?: string | null;
     isCompletedThisCycle: boolean;
     nextDueDate: string;
     lastCompletedAt: string | null;

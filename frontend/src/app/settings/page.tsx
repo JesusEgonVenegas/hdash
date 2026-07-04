@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
+import { MEMBER_DOT } from "../components/MemberDot";
+
+const COLORS = ["green", "blue", "yellow", "pink", "purple", "orange", "cyan", "red"];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5063";
 
@@ -85,6 +88,17 @@ export default function SettingsPage() {
             setError(firstError(e, "Could not update profile."));
         } finally {
             setBusy(false);
+        }
+    }
+
+    async function saveColor(c: string) {
+        if (!token || !user) return;
+        try {
+            await apiFetch("/api/auth/profile", { token, method: "PUT", body: { displayName: user.displayName, color: c } });
+            await refreshUser();
+            flashMsg("Color updated.");
+        } catch {
+            setError("Could not update color.");
         }
     }
 
@@ -182,6 +196,22 @@ export default function SettingsPage() {
                         >
                             [ SAVE ]
                         </button>
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-xs text-neutral-500 mb-1">YOUR COLOR</label>
+                    <div className="flex gap-2">
+                        {COLORS.map((c) => (
+                            <button
+                                key={c}
+                                type="button"
+                                onClick={() => saveColor(c)}
+                                aria-label={c}
+                                className={`w-6 h-6 rounded-full ${MEMBER_DOT[c]} cursor-pointer ${
+                                    (user?.color ?? "green") === c ? "ring-2 ring-white ring-offset-1 ring-offset-black" : "opacity-50 hover:opacity-100"
+                                }`}
+                            />
+                        ))}
                     </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">

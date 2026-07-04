@@ -60,6 +60,7 @@ public static class ExpenseEndpoints
                 e.Amount,
                 e.PaidByUserId,
                 PaidByName = e.PaidBy?.DisplayName,
+                PaidByColor = e.PaidBy?.Color,
                 ParticipantIds = e.Participants(),
                 Share = e.Participants().Count > 0 ? Math.Round(e.Amount / e.Participants().Count, 2) : e.Amount,
                 e.CreatedAt,

@@ -4,6 +4,7 @@ export interface Expense {
     amount: number;
     paidByUserId: string;
     paidByName: string | null;
+    paidByColor?: string | null;
     participantIds: string[];
     share: number;
     createdAt: string;

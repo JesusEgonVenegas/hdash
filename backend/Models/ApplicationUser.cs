@@ -5,6 +5,10 @@ namespace backend.Models;
 public class ApplicationUser : IdentityUser
 {
     public string DisplayName { get; set; } = string.Empty;
+
+    // Personal accent color for attribution across the app.
+    public string Color { get; set; } = "green";
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Whether this person receives the daily email digest.
