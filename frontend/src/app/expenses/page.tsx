@@ -4,14 +4,19 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
-import type { ExpensesResponse } from "@/types/expense";
+import type { ExpensesResponse, RecurringExpense } from "@/types/expense";
 import type { Household, HouseholdMember } from "@/types/household";
 
 export default function ExpensesPage() {
     const { token, user, isLoading } = useAuth();
     const [data, setData] = useState<ExpensesResponse | null>(null);
+    const [recurring, setRecurring] = useState<RecurringExpense[]>([]);
     const [members, setMembers] = useState<HouseholdMember[]>([]);
     const [error, setError] = useState<string | null>(null);
+
+    const [recDesc, setRecDesc] = useState("");
+    const [recAmount, setRecAmount] = useState("");
+    const [recCadence, setRecCadence] = useState<"weekly" | "monthly">("monthly");
 
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("");
@@ -22,11 +27,13 @@ export default function ExpensesPage() {
     const load = useCallback(async () => {
         if (!token) return;
         try {
-            const [exp, house] = await Promise.all([
+            const [exp, house, rec] = await Promise.all([
                 apiFetch<ExpensesResponse>("/api/expenses", { token }),
                 apiFetch<Household>("/api/household", { token }).catch(() => null),
+                apiFetch<RecurringExpense[]>("/api/expenses/recurring", { token }).catch(() => []),
             ]);
             setData(exp);
+            setRecurring(rec);
             const m = house?.members ?? [];
             setMembers(m);
             setPaidBy((prev) => prev || user?.id || "");
@@ -75,6 +82,24 @@ export default function ExpensesPage() {
             body: { description: "Settled up 💸", amount, paidByUserId: fromId, participantIds: [toId] },
             token,
         });
+        await load();
+    }
+
+    async function addRecurring() {
+        const amt = parseFloat(recAmount);
+        if (!recDesc.trim() || !(amt > 0)) return;
+        await apiFetch("/api/expenses/recurring", {
+            method: "POST",
+            body: { description: recDesc.trim(), amount: amt, cadence: recCadence },
+            token,
+        });
+        setRecDesc("");
+        setRecAmount("");
+        await load();
+    }
+
+    async function removeRecurring(id: string) {
+        await apiFetch(`/api/expenses/recurring/${id}`, { method: "DELETE", token });
         await load();
     }
 
@@ -195,6 +220,42 @@ export default function ExpensesPage() {
                     </button>
                 </div>
             </form>
+
+            {/* RECURRING */}
+            <div className="border border-neutral-800 p-4">
+                <h2 className="text-green-400 text-sm mb-3">{"> "}RECURRING</h2>
+                {recurring.length > 0 && (
+                    <ul className="divide-y divide-neutral-800 mb-3">
+                        {recurring.map((r) => (
+                            <li key={r.id} className="py-2 flex items-center justify-between text-sm group">
+                                <div>
+                                    <span className="text-white">{r.description}</span>
+                                    <span className="text-neutral-500 text-xs ml-2">
+                                        {money(r.amount)} · {r.cadence} · next {new Date(r.nextRunDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                                    </span>
+                                </div>
+                                <button onClick={() => removeRecurring(r.id)} className="text-neutral-700 hover:text-red-400 opacity-0 group-hover:opacity-100">×</button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                <div className="flex flex-wrap gap-2 items-center">
+                    <input value={recDesc} onChange={(e) => setRecDesc(e.target.value)} placeholder="rent, internet…"
+                        className="flex-1 min-w-[120px] bg-transparent border border-neutral-700 px-3 py-1.5 text-white placeholder:text-neutral-600 text-sm focus:outline-none focus:border-green-400" />
+                    <input value={recAmount} onChange={(e) => setRecAmount(e.target.value)} type="number" step="0.01" min="0" placeholder="0.00"
+                        className="w-24 bg-transparent border border-neutral-700 px-3 py-1.5 text-white placeholder:text-neutral-600 text-sm focus:outline-none focus:border-green-400" />
+                    <select value={recCadence} onChange={(e) => setRecCadence(e.target.value as "weekly" | "monthly")}
+                        className="bg-neutral-900 border border-neutral-700 text-neutral-200 px-2 py-1.5 text-sm focus:outline-none focus:border-green-400">
+                        <option value="monthly">monthly</option>
+                        <option value="weekly">weekly</option>
+                    </select>
+                    <button onClick={addRecurring} disabled={!recDesc.trim() || !(parseFloat(recAmount) > 0)}
+                        className="border border-neutral-600 text-neutral-300 hover:border-green-400 hover:text-green-400 px-3 py-1.5 text-sm disabled:opacity-40">
+                        + recurring
+                    </button>
+                </div>
+                <p className="text-neutral-600 text-xs mt-2">split equally among the household · logged automatically when due</p>
+            </div>
 
             {/* HISTORY */}
             <div className="border border-neutral-800 p-4">

@@ -20,6 +20,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<HouseholdNote> HouseholdNotes => Set<HouseholdNote>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Meal> Meals => Set<Meal>();
+    public DbSet<RecurringExpense> RecurringExpenses => Set<RecurringExpense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -170,6 +171,20 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(m => m.Household)
             .WithMany()
             .HasForeignKey(m => m.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<RecurringExpense>()
+            .HasOne(r => r.PaidBy)
+            .WithMany()
+            .HasForeignKey(r => r.PaidByUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<RecurringExpense>()
+            .HasOne(r => r.Household)
+            .WithMany()
+            .HasForeignKey(r => r.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -146,6 +146,13 @@ public static class DemoSeeder
             new Meal { Date = today.AddDays(2), Slot = "dinner", Title = "Taco Tuesday", Ingredients = "tortillas\nground beef\nlettuce\ncheese\nsalsa", CreatedByUserId = alex.Id, HouseholdId = household.Id }
         );
 
+        db.RecurringExpenses.Add(new RecurringExpense
+        {
+            Description = "Rent", Amount = 1800m, Cadence = "monthly",
+            PaidByUserId = alex.Id, ParticipantIds = both,
+            NextRunDate = today.AddMonths(1), HouseholdId = household.Id,
+        });
+
         await db.SaveChangesAsync();
         logger.LogInformation(
             "Seeded demo household '{Household}' (invite {Code}) with 2 members, 3 debts, 9 groceries, 6 todos, 6 chores, 8 events.",

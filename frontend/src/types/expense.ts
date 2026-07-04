@@ -28,3 +28,14 @@ export interface ExpensesResponse {
     balances: Balance[];
     settlements: Settlement[];
 }
+
+export interface RecurringExpense {
+    id: string;
+    description: string;
+    amount: number;
+    cadence: "weekly" | "monthly";
+    nextRunDate: string;
+    paidByUserId: string;
+    paidByName: string;
+    participantIds: string[];
+}

@@ -13,15 +13,22 @@ public static class ExpenseEndpoints
         group.MapGet("/", GetExpenses);
         group.MapPost("/", CreateExpense);
         group.MapDelete("/{id}", DeleteExpense);
+        group.MapGet("/recurring", GetRecurring);
+        group.MapPost("/recurring", CreateRecurring);
+        group.MapDelete("/recurring/{id}", DeleteRecurring);
         return group;
     }
 
     public record CreateExpenseRequest(string Description, decimal Amount, string? PaidByUserId, List<string>? ParticipantIds);
+    public record CreateRecurringRequest(string Description, decimal Amount, string Cadence, string? PaidByUserId, List<string>? ParticipantIds);
 
     private static async Task<IResult> GetExpenses(AppDbContext db, ClaimsPrincipal principal)
     {
         var user = await CurrentUser(db, principal);
         if (user is null) return Results.Unauthorized();
+
+        // Spawn any due recurring instances before computing balances.
+        await MaterializeDueAsync(db, user);
 
         var expenses = await Scoped(db, user).Include(e => e.PaidBy).OrderByDescending(e => e.CreatedAt).ToListAsync();
         var names = await MemberNames(db, user);
@@ -136,6 +143,99 @@ public static class ExpenseEndpoints
         }
         return settlements;
     }
+
+    private static async Task<IResult> GetRecurring(AppDbContext db, ClaimsPrincipal principal)
+    {
+        var user = await CurrentUser(db, principal);
+        if (user is null) return Results.Unauthorized();
+        var names = await MemberNames(db, user);
+
+        var list = await ScopedRecurring(db, user).OrderBy(r => r.NextRunDate).ToListAsync();
+        return Results.Ok(list.Select(r => new
+        {
+            r.Id, r.Description, r.Amount, r.Cadence, r.NextRunDate,
+            r.PaidByUserId,
+            PaidByName = names.GetValueOrDefault(r.PaidByUserId, "someone"),
+            ParticipantIds = r.ParticipantIds.Split(',', StringSplitOptions.RemoveEmptyEntries),
+        }));
+    }
+
+    private static async Task<IResult> CreateRecurring(CreateRecurringRequest req, AppDbContext db, ClaimsPrincipal principal)
+    {
+        var user = await CurrentUser(db, principal);
+        if (user is null) return Results.Unauthorized();
+        if (string.IsNullOrWhiteSpace(req.Description)) return Results.BadRequest(new { error = "Description is required." });
+        if (req.Amount <= 0) return Results.BadRequest(new { error = "Amount must be positive." });
+
+        var members = await MemberNames(db, user);
+        var payer = req.PaidByUserId is not null && members.ContainsKey(req.PaidByUserId) ? req.PaidByUserId : user.Id;
+        var participants = (req.ParticipantIds ?? members.Keys.ToList()).Where(members.ContainsKey).Distinct().ToList();
+        if (participants.Count == 0) participants.Add(user.Id);
+        var cadence = req.Cadence is "weekly" or "monthly" ? req.Cadence : "monthly";
+
+        db.RecurringExpenses.Add(new RecurringExpense
+        {
+            Description = req.Description.Trim(),
+            Amount = req.Amount,
+            Cadence = cadence,
+            PaidByUserId = payer,
+            ParticipantIds = string.Join(",", participants),
+            NextRunDate = NextFrom(cadence, DateTime.UtcNow.Date),
+            HouseholdId = user.HouseholdId,
+        });
+        await db.SaveChangesAsync();
+        return Results.Ok(new { message = "Recurring expense added." });
+    }
+
+    private static async Task<IResult> DeleteRecurring(Guid id, AppDbContext db, ClaimsPrincipal principal)
+    {
+        var user = await CurrentUser(db, principal);
+        if (user is null) return Results.Unauthorized();
+
+        var r = await db.RecurringExpenses.FirstOrDefaultAsync(x => x.Id == id);
+        if (r is null) return Results.NotFound();
+        var ok = user.HouseholdId is not null ? r.HouseholdId == user.HouseholdId : r.PaidByUserId == user.Id && r.HouseholdId == null;
+        if (!ok) return Results.Forbid();
+
+        db.RecurringExpenses.Remove(r);
+        await db.SaveChangesAsync();
+        return Results.Ok(new { message = "Recurring expense removed." });
+    }
+
+    // Turn every due recurring template into real expenses (catching up if several periods passed).
+    private static async Task MaterializeDueAsync(AppDbContext db, ApplicationUser user)
+    {
+        var today = DateTime.UtcNow.Date;
+        var due = await ScopedRecurring(db, user).Where(r => r.NextRunDate <= today).ToListAsync();
+        if (due.Count == 0) return;
+
+        foreach (var r in due)
+        {
+            var guard = 0;
+            while (r.NextRunDate <= today && guard++ < 120)
+            {
+                db.Expenses.Add(new Expense
+                {
+                    Description = r.Description,
+                    Amount = r.Amount,
+                    PaidByUserId = r.PaidByUserId,
+                    ParticipantIds = r.ParticipantIds,
+                    HouseholdId = r.HouseholdId,
+                    CreatedAt = r.NextRunDate,
+                });
+                r.NextRunDate = NextFrom(r.Cadence, r.NextRunDate);
+            }
+        }
+        await db.SaveChangesAsync();
+    }
+
+    private static DateTime NextFrom(string cadence, DateTime from) =>
+        cadence == "weekly" ? from.AddDays(7) : from.AddMonths(1);
+
+    private static IQueryable<RecurringExpense> ScopedRecurring(AppDbContext db, ApplicationUser user) =>
+        user.HouseholdId is not null
+            ? db.RecurringExpenses.Where(r => r.HouseholdId == user.HouseholdId)
+            : db.RecurringExpenses.Where(r => r.PaidByUserId == user.Id && r.HouseholdId == null);
 
     private static IQueryable<Expense> Scoped(AppDbContext db, ApplicationUser user) =>
         user.HouseholdId is not null
