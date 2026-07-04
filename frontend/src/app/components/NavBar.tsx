@@ -23,7 +23,7 @@ const hideOn = ["/login", "/register", "/onboarding", "/forgot-password", "/rese
 function isActive(href: string, pathname: string): boolean {
     if (href === "/") return pathname === "/";
     // The "money" section spans debts, payments, and expenses.
-    if (href === "/debts") return pathname.startsWith("/debts") || pathname.startsWith("/payments") || pathname.startsWith("/expenses");
+    if (href === "/debts") return ["/debts", "/payments", "/expenses", "/fairness"].some((p) => pathname.startsWith(p));
     return pathname.startsWith(href);
 }
 

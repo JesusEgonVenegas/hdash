@@ -21,12 +21,21 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Meal> Meals => Set<Meal>();
     public DbSet<RecurringExpense> RecurringExpenses => Set<RecurringExpense>();
+    public DbSet<ChoreCompletion> ChoreCompletions => Set<ChoreCompletion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<RevokedToken>().HasKey(t => t.Jti);
+
+        // Keep completion history even if the user or household record is removed.
+        modelBuilder
+            .Entity<ChoreCompletion>()
+            .HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder
             .Entity<Debt>()

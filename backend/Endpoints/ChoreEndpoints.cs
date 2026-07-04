@@ -171,6 +171,16 @@ public static class ChoreEndpoints
         var onTime = DateTime.UtcNow.Date <= item.NextDueDate.Date;
         item.Streak = onTime ? item.Streak + 1 : 1;
 
+        // Log who actually did it, for chore-load fairness (the item itself keeps no history).
+        db.ChoreCompletions.Add(new ChoreCompletion
+        {
+            ChoreItemId = item.Id,
+            ChoreName = item.Name,
+            UserId = user.Id,
+            HouseholdId = item.HouseholdId,
+            OnTime = onTime,
+        });
+
         // mark as completed for this cycle
         item.LastCompletedAt = DateTime.UtcNow;
         item.IsCompletedThisCycle = true;

@@ -7,6 +7,7 @@ const tabs = [
     { href: "/debts", label: "debts" },
     { href: "/payments", label: "payments" },
     { href: "/expenses", label: "expenses" },
+    { href: "/fairness", label: "fairness" },
 ];
 
 /** Tab bar unifying the money section: debts + payments (personal) + expenses (shared). */
