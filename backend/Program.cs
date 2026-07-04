@@ -127,18 +127,22 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Apply migrations on startup in every environment so a fresh deploy is ready.
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
-
-    // Seed a lived-in demo household for local development.
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    await DemoSeeder.SeedAsync(db, userManager, app.Logger);
+    // The lived-in demo household is development-only.
+    if (app.Environment.IsDevelopment())
+    {
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        await DemoSeeder.SeedAsync(db, userManager, app.Logger);
+    }
 }
+
+if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
 
 app.UseCors();
 app.UseRateLimiter();

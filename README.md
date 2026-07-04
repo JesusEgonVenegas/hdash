@@ -145,26 +145,39 @@ Any SMTP works — a Gmail app password, Fastmail, or a Resend/Postmark SMTP bri
 dotnet test        # backend.Tests — DebtCalculator money-math + rules
 ```
 
-## Production
+## Deploy (Docker)
 
-Set via environment or `appsettings.Production.json`:
+The whole app runs from one `docker-compose.yml` — a .NET backend, a Next.js
+frontend, and a persisted SQLite volume. No managed database required, so it fits
+comfortably on a ~€4/mo VPS or a Raspberry Pi.
+
+```bash
+cp .env.example .env
+# edit .env — set JWT_KEY at minimum:  openssl rand -hex 32
+docker compose up -d --build
+```
+
+Frontend on `:3000`, backend on `:5063`. The database, nightly backups, and (in
+dev-file mode) sent digests all live on the `hdash-data` volume, so they survive
+restarts and image rebuilds. Migrations apply automatically on startup.
+
+**Key `.env` settings** (see `.env.example` for all):
 
 | Variable | Description |
 |---|---|
-| `Jwt__Key` | Signing secret, ≥32 chars (`openssl rand -hex 32`) |
-| `ConnectionStrings__DefaultConnection` | e.g. `Data Source=/data/app.db` (mount a writable volume) |
-| `Cors__AllowedOrigins` | Frontend origin, e.g. `https://home.example.com` |
-| `Email__*`, `Digest__Enabled` | Turn on real email + the daily scheduler |
+| `JWT_KEY` | **Required.** Signing secret, ≥32 chars (`openssl rand -hex 32`) |
+| `NEXT_PUBLIC_API_URL` | Browser-reachable backend URL (baked at build; rebuild if it changes) |
+| `FRONTEND_ORIGIN` | Frontend origin, for CORS + digest links |
+| `EMAIL_PROVIDER` / `SMTP_*` / `DIGEST_ENABLED` | Turn on real email + the daily digest |
+| `BACKUP_ENABLED` | Nightly SQLite snapshots to the volume (on by default) |
 
-Publish and reverse-proxy behind nginx/Caddy:
+> **Remote hosts:** `NEXT_PUBLIC_API_URL` is compiled into the frontend at build
+> time, so set it to your host's backend URL and rebuild (`docker compose up -d --build`).
+> For a single public domain, put a reverse proxy (Caddy/nginx) in front and route
+> `/` to the frontend and the API to the backend.
 
-```bash
-cd backend  && dotnet publish -c Release -o /srv/hdash-api
-cd frontend && npm run build && npm start
-```
-
-Because it's SQLite + one .NET process + Next.js, the whole thing runs comfortably on a
-~€4/mo VPS or a Raspberry Pi — no managed database required.
+Not using Docker? Each service also runs standalone (`dotnet publish -c Release`
+for the backend; `npm run build && npm start` for the frontend).
 
 ## Project structure
 

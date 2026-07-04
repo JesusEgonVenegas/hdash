@@ -1,0 +1,44 @@
+# HDASH — self-hosted household dashboard.
+# Copy .env.example to .env, set JWT_KEY (and email/URLs if going public), then:
+#   docker compose up -d --build
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5063:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Jwt__Key: ${JWT_KEY:?set JWT_KEY in .env}
+      ConnectionStrings__DefaultConnection: "Data Source=/data/app.db"
+      Cors__AllowedOrigins: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      # Daily email digest (off by default)
+      Digest__Enabled: ${DIGEST_ENABLED:-false}
+      Digest__Skin: ${DIGEST_SKIN:-departures}
+      Email__Provider: ${EMAIL_PROVIDER:-file}
+      Email__Outbox: /data/outbox
+      Email__Smtp__Host: ${SMTP_HOST:-}
+      Email__Smtp__Port: ${SMTP_PORT:-587}
+      Email__Smtp__Username: ${SMTP_USERNAME:-}
+      Email__Smtp__Password: ${SMTP_PASSWORD:-}
+      Email__Smtp__From: ${SMTP_FROM:-}
+      App__FrontendUrl: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      # Nightly SQLite backups to the volume
+      Backup__Enabled: ${BACKUP_ENABLED:-true}
+      Backup__Directory: /data/backups
+    volumes:
+      - hdash-data:/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5063}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  hdash-data:

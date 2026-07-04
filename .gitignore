@@ -99,3 +99,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# but keep the template
+!.env.example
