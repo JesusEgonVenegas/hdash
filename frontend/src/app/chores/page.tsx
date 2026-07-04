@@ -370,6 +370,11 @@ function ChoreRow({
 
     const isMyTurn = item.assignedToUserId === currentUserId;
 
+    // Rotation advances to the next member (sorted like the backend). Preview who's up.
+    const sorted = [...members].sort((a, b) => a.displayName.localeCompare(b.displayName) || a.id.localeCompare(b.id));
+    const curIdx = sorted.findIndex((m) => m.id === item.assignedToUserId);
+    const upNext = members.length > 1 && curIdx >= 0 ? sorted[(curIdx + 1) % sorted.length] : null;
+
     return (
         <div className={`border-b border-neutral-800 ${item.isCompletedThisCycle ? "opacity-50" : ""}`}>
             {/* MAIN ROW */}
@@ -434,6 +439,12 @@ function ChoreRow({
                                 <span className={`text-xs flex items-center gap-1 ${isMyTurn ? "text-green-400" : "text-neutral-400"}`}>
                                     <MemberDot color={item.assignedToColor} />
                                     {isMyTurn ? "your turn" : item.assignedToName}
+                                </span>
+                            )}
+
+                            {upNext && !item.isCompletedThisCycle && (
+                                <span className="text-xs text-neutral-600 flex items-center gap-1">
+                                    next: <MemberDot color={upNext.color} name={upNext.displayName} />
                                 </span>
                             )}
 

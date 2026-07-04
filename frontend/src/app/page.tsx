@@ -8,6 +8,7 @@ import type { ChoreItem } from "@/types/chore";
 import type { PaymentApi } from "@/types/payment";
 import type { HouseholdNote } from "@/types/note";
 import type { ExpensesResponse } from "@/types/expense";
+import type { Meal } from "@/types/meal";
 
 type DebtWithBalance = {
     id: string;
@@ -39,7 +40,14 @@ type Data = {
     chores: ChoreItem[];
     notes: HouseholdNote[];
     expenses: ExpensesResponse;
+    meals: Meal[];
 };
+
+function mondayOf(d: Date) {
+    const x = new Date(d);
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+}
 
 const NOTE_ACCENT: Record<string, string> = {
     yellow: "border-l-yellow-500/60",
@@ -86,7 +94,7 @@ export default function DashboardPage() {
         (async () => {
             try {
                 const emptyExpenses = { expenses: [], balances: [], settlements: [], summary: { monthTotal: 0, monthCount: 0, byCategory: [] } };
-                const [today, reminders, debts, payments, chores, notes, expenses] = await Promise.all([
+                const [today, reminders, debts, payments, chores, notes, expenses, meals] = await Promise.all([
                     apiFetch<Today>("/api/today", { token }),
                     apiFetch<{ items: Reminder[] }>("/api/reminders", { token }).then((r) => r.items),
                     apiFetch<DebtWithBalance[]>("/api/debts", { token }).catch(() => []),
@@ -94,8 +102,9 @@ export default function DashboardPage() {
                     apiFetch<ChoreItem[]>("/api/chores", { token }).catch(() => []),
                     apiFetch<HouseholdNote[]>("/api/notes", { token }).catch(() => []),
                     apiFetch<ExpensesResponse>("/api/expenses", { token }).catch(() => emptyExpenses),
+                    apiFetch<Meal[]>(`/api/meals?week=${mondayOf(new Date())}`, { token }).catch(() => []),
                 ]);
-                setData({ today, reminders, debts, payments, chores, notes, expenses });
+                setData({ today, reminders, debts, payments, chores, notes, expenses, meals });
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load dashboard");
             }
@@ -106,8 +115,12 @@ export default function DashboardPage() {
     if (error) return <div className="ascii-error font-mono">[ERROR] {error}</div>;
     if (!data) return null;
 
-    const { today, reminders, debts, payments, chores, notes, expenses } = data;
+    const { today, reminders, debts, payments, chores, notes, expenses, meals } = data;
     const now = new Date();
+    const upcomingMeals = [...meals]
+        .filter((m) => new Date(m.date) >= new Date(new Date().toDateString()))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 4);
 
     const myNet = expenses.balances.find((b) => b.userId === user?.id)?.net ?? 0;
 
@@ -202,6 +215,29 @@ export default function DashboardPage() {
                             </div>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {/* ON THE MENU */}
+            {upcomingMeals.length > 0 && (
+                <div className="border border-neutral-800 p-4">
+                    <div className="flex items-baseline justify-between mb-3">
+                        <h2 className="text-green-400 text-sm">{"> "}ON THE MENU</h2>
+                        <Link href="/meals" className="text-neutral-600 hover:text-green-400 text-xs">plan →</Link>
+                    </div>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                        {upcomingMeals.map((m) => {
+                            const isToday = new Date(m.date).toDateString() === now.toDateString();
+                            return (
+                                <li key={m.id} className="flex items-center justify-between py-1 border-b border-neutral-800 text-sm">
+                                    <span className={isToday ? "text-green-400" : "text-white"}>{m.title}</span>
+                                    <span className="text-neutral-500 text-xs">
+                                        {isToday ? "tonight" : new Date(m.date).toLocaleDateString(undefined, { weekday: "short" })} · {m.slot}
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </div>
             )}
 
