@@ -15,6 +15,7 @@ type Settings = {
     digestHour: number | null;
     defaultHour: number;
     activeSkin: string;
+    skins: string[];
     schedulerEnabled: boolean;
 };
 
@@ -183,11 +184,12 @@ export default function SettingsPage() {
         }
     }
 
-    async function preview() {
+    async function preview(skin?: string) {
         if (!token) return;
         setBusy(true);
         try {
-            const res = await fetch(`${API_BASE}/api/digest/preview`, { headers: { Authorization: `Bearer ${token}` } });
+            const q = skin ? `?skin=${skin}` : "";
+            const res = await fetch(`${API_BASE}/api/digest/preview${q}`, { headers: { Authorization: `Bearer ${token}` } });
             const html = await res.text();
             window.open(URL.createObjectURL(new Blob([html], { type: "text/html" })), "_blank");
         } catch {
@@ -358,7 +360,7 @@ export default function SettingsPage() {
                 )}
 
                 <div className="flex flex-wrap gap-3">
-                    <button onClick={preview} disabled={busy} className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 py-1.5 text-sm disabled:opacity-40">
+                    <button onClick={() => preview()} disabled={busy} className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 py-1.5 text-sm disabled:opacity-40">
                         [ PREVIEW ]
                     </button>
                     <button onClick={sendTest} disabled={busy} className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-40">
@@ -366,8 +368,30 @@ export default function SettingsPage() {
                     </button>
                 </div>
 
+                {settings?.skins && settings.skins.length > 0 && (
+                    <div className="border-t border-neutral-800 pt-3">
+                        <div className="text-neutral-500 text-xs mb-2">Preview a skin (opens in a new tab):</div>
+                        <div className="flex flex-wrap gap-2">
+                            {settings.skins.map((s) => (
+                                <button
+                                    key={s}
+                                    onClick={() => preview(s)}
+                                    disabled={busy}
+                                    className={`px-2 py-1 border text-xs disabled:opacity-40 ${
+                                        s === settings.activeSkin
+                                            ? "border-green-400 text-green-400"
+                                            : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
+                                    }`}
+                                >
+                                    {s}{s === settings.activeSkin ? " ●" : ""}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="text-neutral-600 text-xs border-t border-neutral-800 pt-3 space-y-0.5">
-                    <div>skin: <span className="text-neutral-400">{settings?.activeSkin}</span></div>
+                    <div>active skin: <span className="text-neutral-400">{settings?.activeSkin}</span> <span className="text-neutral-700">· set via Digest:Skin (use &ldquo;auto&rdquo; for weekday + Sunday-Herald)</span></div>
                     <div>
                         daily delivery:{" "}
                         <span className={settings?.schedulerEnabled ? "text-green-400" : "text-yellow-500"}>

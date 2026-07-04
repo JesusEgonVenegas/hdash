@@ -30,6 +30,7 @@ public static class DigestEndpoints
             digestHour = user.DigestHour,                       // null = use default
             defaultHour = config.GetValue("Digest:Hour", 6),
             activeSkin = config["Digest:Skin"] ?? "departures",
+            skins = DigestSkins.Names,
             schedulerEnabled = config.GetValue("Digest:Enabled", false),
         });
     }
@@ -49,14 +50,20 @@ public static class DigestEndpoints
     }
 
     // Renders the caller's digest as HTML so it can be opened in a browser tab.
+    // Optional ?skin= previews any skin (departures/terminal/herald/baseline/auto)
+    // without changing the configured default.
     private static async Task<IResult> Preview(
-        AppDbContext db, DigestDispatcher dispatcher, ClaimsPrincipal principal)
+        AppDbContext db, DigestDispatcher dispatcher, IConfiguration config, HttpRequest req, ClaimsPrincipal principal)
     {
         var user = await CurrentUser(db, principal);
         if (user is null) return Results.Unauthorized();
 
         var digest = await dispatcher.Service.BuildForUserAsync(user, DateTime.UtcNow.Date);
-        return Results.Content(dispatcher.Preview(digest), "text/html");
+        var skin = req.Query["skin"].ToString();
+        var html = string.IsNullOrWhiteSpace(skin)
+            ? dispatcher.Preview(digest)
+            : DigestSkins.Create(skin, config).Render(digest);
+        return Results.Content(html, "text/html");
     }
 
     // Sends the digest to the caller's own email address, right now.

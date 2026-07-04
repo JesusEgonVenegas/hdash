@@ -95,13 +95,10 @@ builder.Services.AddRateLimiter(options =>
 // Daily email digest pipeline (data -> render -> send -> schedule).
 builder.Services.AddScoped<backend.Services.Digest.DigestService>();
 builder.Services.AddScoped<backend.Services.Digest.DigestDispatcher>();
-// Active digest skin — swap via Digest:Skin without touching the pipeline.
+// Active digest skin — swap via Digest:Skin (departures/terminal/herald/baseline),
+// or "auto" for weekday-lean + Sunday-Herald rotation. See DigestSkins.
 builder.Services.AddSingleton<backend.Services.Digest.IDigestRenderer>(_ =>
-    (builder.Configuration["Digest:Skin"] ?? "departures").ToLowerInvariant() switch
-    {
-        "baseline" => new backend.Services.Digest.BaselineDigestRenderer(),
-        _ => new backend.Services.Digest.DeparturesDigestRenderer(),
-    });
+    backend.Services.Digest.DigestSkins.Create(builder.Configuration["Digest:Skin"], builder.Configuration));
 if (string.Equals(builder.Configuration["Email:Provider"], "smtp", StringComparison.OrdinalIgnoreCase))
     builder.Services.AddSingleton<backend.Services.Email.IEmailSender, backend.Services.Email.SmtpEmailSender>();
 else
