@@ -9,6 +9,8 @@ the calendar, the money, and a straight answer to *"are we even?"*
 
 `Next.js 16` · `React 19` · `ASP.NET Core 9` · `EF Core` · `SQLite` · `Docker`
 
+[![Support on Ko-fi](https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jesusvenegas)
+
 <img src="docs/demo.gif" alt="HDASH walkthrough: login, dashboard, chores, grocery, command palette, fairness, payoff simulator, themes" width="900">
 
 <sub>▶ <a href="docs/demo.mp4">Full-quality video (MP4, 1 min)</a></sub>
@@ -256,6 +258,14 @@ hdash/
 - [ ] Installable PWA (offline grocery list)
 - [ ] Insights ("grocery spend up 30% this month")
 - [ ] Calendar sync (ICS export/subscribe)
+
+## Support
+
+HDASH is free and open source, with no paid tier. If it makes life at your place a little
+easier, you can [buy me a coffee on Ko-fi](https://ko-fi.com/jesusvenegas). It's entirely
+optional, and it helps fund new features.
+
+[![Support on Ko-fi](https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jesusvenegas)
 
 ---
 
