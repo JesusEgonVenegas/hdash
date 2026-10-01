@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
-import { Debt } from "@/types/debt";
+import type { SimulationDebt } from "@/types/debt";
 import SimulationClient from "../components/SimulationClient";
 
 export default function DebtSimulationPage() {
     const { token, isLoading } = useAuth();
-    const [debts, setDebts] = useState<Debt[] | null>(null);
+    const [debts, setDebts] = useState<SimulationDebt[] | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -16,7 +16,7 @@ export default function DebtSimulationPage() {
 
         async function load() {
             try {
-                const data = await apiFetch<Debt[]>("/api/simulation", { token });
+                const data = await apiFetch<SimulationDebt[]>("/api/simulation", { token });
                 setDebts(data);
             } catch (err: any) {
                 setError(err.message ?? "Failed to load simulation data");
