@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* ============================================================
+   THEME / SKIN SYSTEM
+   ------------------------------------------------------------
+   Skins work by overriding Tailwind v4's color-ramp variables
+   (--color-neutral-*, --color-green-*, ...). Because utilities
+   like `text-green-400` compile to `var(--color-green-400)`,
+   overriding the ramp per [data-theme] re-skins every component
+   AND the .ascii-* classes below — no per-component edits.
+
+   :root defaults == the "terminal" skin (green phosphor on black).
+   ============================================================ */
+
 :root {
     --background: #0a0a0a;
     --foreground: #ededed;
@@ -12,33 +24,270 @@
     --font-mono: var(--font-geist-mono);
 }
 
-body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-mono), monospace;
+/* ===== TERMINAL-LOOK PALETTES (famous developer color schemes) ===== */
+
+/* --- Gruvbox Dark --- */
+html[data-theme="gruvbox-dark"] {
+    --background: #282828;
+    --foreground: #ebdbb2;
+    --color-neutral-950: #1d2021;
+    --color-neutral-900: #282828;
+    --color-neutral-800: #32302f;
+    --color-neutral-700: #504945;
+    --color-neutral-600: #665c54;
+    --color-neutral-500: #7c6f64;
+    --color-neutral-400: #928374;
+    --color-neutral-300: #a89984;
+    --color-neutral-200: #d5c4a1;
+    --color-neutral-100: #ebdbb2;
+    --color-green-200: #dfe08a;
+    --color-green-300: #c9cc4a;
+    --color-green-400: #b8bb26;
+    --color-green-500: #98971a;
+    --color-red-400: #fb4934;
+    --color-yellow-400: #fabd2f;
+    --color-blue-400: #83a598;
+    --color-pink-400: #d3869b;
 }
 
-/* === HDash Terminal UI System === */
+/* --- Gruvbox Light --- */
+html[data-theme="gruvbox-light"] {
+    --background: #fbf1c7;
+    --foreground: #3c3836;
+    --color-neutral-950: #fbf1c7;
+    --color-neutral-900: #f2e5bc;
+    --color-neutral-800: #ebdbb2;
+    --color-neutral-700: #d5c4a1;
+    --color-neutral-600: #bdae93;
+    --color-neutral-500: #a89984;
+    --color-neutral-400: #7c6f64;
+    --color-neutral-300: #665c54;
+    --color-neutral-200: #3c3836;
+    --color-neutral-100: #282828;
+    --color-green-200: #b8bb26;
+    --color-green-300: #98971a;
+    --color-green-400: #79740e;
+    --color-green-500: #5a5410;
+    --color-white: #3c3836;
+    --color-red-400: #9d0006;
+    --color-yellow-400: #b57614;
+    --color-blue-400: #076678;
+    --color-pink-400: #8f3f71;
+}
+
+/* --- Solarized Dark --- */
+html[data-theme="solarized-dark"] {
+    --background: #002b36;
+    --foreground: #93a1a1;
+    --color-neutral-950: #002b36;
+    --color-neutral-900: #073642;
+    --color-neutral-800: #0e4855;
+    --color-neutral-700: #1a5a68;
+    --color-neutral-600: #486b74;
+    --color-neutral-500: #586e75;
+    --color-neutral-400: #657b83;
+    --color-neutral-300: #839496;
+    --color-neutral-200: #93a1a1;
+    --color-neutral-100: #eee8d5;
+    --color-green-200: #c3d100;
+    --color-green-300: #a0b300;
+    --color-green-400: #859900;
+    --color-green-500: #6c7c00;
+    --color-red-400: #dc322f;
+    --color-yellow-400: #b58900;
+    --color-blue-400: #268bd2;
+    --color-pink-400: #d33682;
+}
+
+/* --- Solarized Light --- */
+html[data-theme="solarized-light"] {
+    --background: #fdf6e3;
+    --foreground: #657b83;
+    --color-neutral-950: #fdf6e3;
+    --color-neutral-900: #eee8d5;
+    --color-neutral-800: #e3ddca;
+    --color-neutral-700: #d3cdb5;
+    --color-neutral-600: #93a1a1;
+    --color-neutral-500: #839496;
+    --color-neutral-400: #657b83;
+    --color-neutral-300: #586e75;
+    --color-neutral-200: #073642;
+    --color-neutral-100: #002b36;
+    --color-green-200: #a0b300;
+    --color-green-300: #859900;
+    --color-green-400: #728600;
+    --color-green-500: #5c6c00;
+    --color-white: #073642;
+    --color-red-400: #dc322f;
+    --color-yellow-400: #b58900;
+    --color-blue-400: #268bd2;
+    --color-pink-400: #d33682;
+}
+
+/* --- Dracula --- */
+html[data-theme="dracula"] {
+    --background: #282a36;
+    --foreground: #f8f8f2;
+    --color-neutral-950: #21222c;
+    --color-neutral-900: #282a36;
+    --color-neutral-800: #343746;
+    --color-neutral-700: #44475a;
+    --color-neutral-600: #565a70;
+    --color-neutral-500: #6272a4;
+    --color-neutral-400: #7b82ac;
+    --color-neutral-300: #b7bdd8;
+    --color-neutral-200: #dfe1f0;
+    --color-neutral-100: #f8f8f2;
+    --color-green-200: #e4d4ff;
+    --color-green-300: #d0b3ff;
+    --color-green-400: #bd93f9;
+    --color-green-500: #a577e8;
+    --color-red-400: #ff5555;
+    --color-yellow-400: #f1fa8c;
+    --color-blue-400: #8be9fd;
+    --color-pink-400: #ff79c6;
+}
+
+/* --- Nord --- */
+html[data-theme="nord"] {
+    --background: #2e3440;
+    --foreground: #eceff4;
+    --color-neutral-950: #272c36;
+    --color-neutral-900: #2e3440;
+    --color-neutral-800: #3b4252;
+    --color-neutral-700: #434c5e;
+    --color-neutral-600: #4c566a;
+    --color-neutral-500: #616e88;
+    --color-neutral-400: #8f9bb3;
+    --color-neutral-300: #d8dee9;
+    --color-neutral-200: #e5e9f0;
+    --color-neutral-100: #eceff4;
+    --color-green-200: #b0d8dd;
+    --color-green-300: #8fbcbb;
+    --color-green-400: #88c0d0;
+    --color-green-500: #81a1c1;
+    --color-red-400: #bf616a;
+    --color-yellow-400: #ebcb8b;
+    --color-blue-400: #81a1c1;
+    --color-pink-400: #b48ead;
+}
+
+/* ===== BAUHAUS THEMES (filled color blocks, thick rules, geometric) ===== */
+
+/* --- Bauhaus Light --- */
+html[data-theme="bauhaus-light"] {
+    --background: #f3f1ea;
+    --foreground: #1a1a1a;
+    --color-neutral-950: #f3f1ea;
+    --color-neutral-900: #fbfaf6;
+    --color-neutral-800: #e8e6de;
+    --color-neutral-700: #dad9d2;
+    --color-neutral-600: #b8b8b2;
+    --color-neutral-500: #8f8f8a;
+    --color-neutral-400: #6a6a66;
+    --color-neutral-300: #3a3a38;
+    --color-neutral-200: #1a1a1a;
+    --color-neutral-100: #111111;
+    /* Accent ramp = Bauhaus cobalt blue. */
+    --color-green-200: #a9b8e8;
+    --color-green-300: #4f6ad0;
+    --color-green-400: #2947ba;
+    --color-green-500: #1f3690;
+    /* text-white reads as ink app-wide; primitives use literal #fff where needed. */
+    --color-white: #1a1a1a;
+    /* The rest of the Bauhaus primaries, used as structural fields/markers. */
+    --color-red-400: #e0332f;
+    --color-red-500: #c0272a;
+    --color-yellow-400: #f5c518;
+    --color-blue-400: #2947ba;
+    --color-pink-400: #c02d7a;
+}
+
+/* --- Bauhaus Dark --- */
+html[data-theme="bauhaus-dark"] {
+    --background: #161618;
+    --foreground: #ececec;
+    --color-neutral-950: #161618;
+    --color-neutral-900: #202024;
+    --color-neutral-800: #2b2b30;
+    --color-neutral-700: #3a3a40;
+    --color-neutral-600: #55555c;
+    --color-neutral-500: #77777f;
+    --color-neutral-400: #9a9aa2;
+    --color-neutral-300: #c6c6cc;
+    --color-neutral-200: #ececec;
+    --color-neutral-100: #fafafa;
+    --color-green-200: #b8c6ff;
+    --color-green-300: #7d95ff;
+    --color-green-400: #4f6ff5;
+    --color-green-500: #3a56d8;
+    --color-red-400: #ff5a52;
+    --color-red-500: #e83d3d;
+    --color-yellow-400: #ffd42e;
+    --color-blue-400: #4f6ff5;
+    --color-pink-400: #f06aa8;
+}
+
+/* Bauhaus themes use Jost — a geometric (Futura-style) grotesque. */
+html[data-theme="bauhaus-light"] body,
+html[data-theme="bauhaus-dark"] body {
+    --ui-font: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Bauhaus signature: a filled triangle marker (part of the shape trio). */
+.bh-tri {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 11px solid currentColor;
+}
+
+/* --ui-font is declared on body, not :root, because next/font defines the
+   --font-geist-mono / --font-jost variables on body — a :root declaration would
+   resolve before they exist. Bauhaus themes override it above. */
+body {
+    --ui-font: var(--font-geist-mono), ui-monospace, monospace;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--ui-font);
+}
+
+/* Smooth cross-fade when switching skins. */
+body,
+.ascii-panel,
+.ascii-button,
+.ascii-button-primary,
+.ascii-button-danger,
+.ascii-input,
+.ascii-select,
+input,
+select,
+textarea {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* === HDash Terminal UI System (tokenized to follow the active skin) === */
 
 /* Panels — sharp edges, consistent border */
 .ascii-panel {
     background: transparent;
-    border: 1px solid #404040;
+    border: 1px solid var(--color-neutral-700);
     padding: 1rem;
     border-radius: 0;
-    color: #e5e5e5;
+    color: var(--color-neutral-200);
 }
 
 /* Tables */
 .ascii-table {
     @apply w-full border-collapse;
-    border: 2px solid #404040;
-    color: #e5e5e5;
+    border: 2px solid var(--color-neutral-700);
+    color: var(--color-neutral-200);
 }
 
 .ascii-table th,
 .ascii-table td {
-    border: 1px solid #404040;
+    border: 1px solid var(--color-neutral-700);
     padding: 0.5rem 0.75rem;
 }
 
@@ -46,13 +295,13 @@ body {
 .ascii-heading {
     font-size: 1.125rem;
     font-weight: bold;
-    color: #4ade80;
+    color: var(--color-green-400);
     margin-bottom: 0.5rem;
 }
 
 .ascii-sub {
     font-size: 0.875rem;
-    color: #a3a3a3;
+    color: var(--color-neutral-400);
 }
 
 /* Table header/row for vim-style sheet */
@@ -60,16 +309,16 @@ body {
 .ascii-table-row {
     display: flex;
     padding: 6px 8px;
-    border-bottom: 1px solid #404040;
+    border-bottom: 1px solid var(--color-neutral-700);
 }
 
 .ascii-table-header {
     font-weight: bold;
-    background: rgba(255, 255, 255, 0.04);
+    background: color-mix(in srgb, var(--color-neutral-100) 4%, transparent);
 }
 
 .ascii-active {
-    color: #4ade80;
+    color: var(--color-green-400);
     text-decoration: underline;
 }
 
@@ -77,33 +326,33 @@ body {
    ASCII INPUT FIELD
    ============================ */
 .ascii-input {
-    font-family: var(--font-mono), monospace;
+    font-family: var(--ui-font);
     font-size: 0.875rem;
     background: transparent;
-    color: #fff;
-    border: 1px solid #404040;
+    color: var(--color-neutral-100);
+    border: 1px solid var(--color-neutral-700);
     padding: 0.5rem 0.75rem;
     outline: none;
     transition: border-color 0.15s;
 }
 
 .ascii-input:focus {
-    border-color: #4ade80;
+    border-color: var(--color-green-400);
 }
 
 .ascii-input::placeholder {
-    color: #525252;
+    color: var(--color-neutral-600);
 }
 
 /* ============================
    ASCII SELECT FIELD
    ============================ */
 .ascii-select {
-    font-family: var(--font-mono), monospace;
+    font-family: var(--ui-font);
     font-size: 0.875rem;
     background: transparent;
-    color: #fff;
-    border: 1px solid #404040;
+    color: var(--color-neutral-100);
+    border: 1px solid var(--color-neutral-700);
     padding: 0.5rem 0.75rem;
     outline: none;
     appearance: none;
@@ -111,31 +360,31 @@ body {
 }
 
 .ascii-select:focus {
-    border-color: #4ade80;
+    border-color: var(--color-green-400);
 }
 
 .ascii-select option {
-    background: #171717;
-    color: #fff;
+    background: var(--color-neutral-900);
+    color: var(--color-neutral-100);
 }
 
 /* ============================
    ASCII BUTTONS
    ============================ */
 .ascii-button {
-    font-family: var(--font-mono), monospace;
+    font-family: var(--ui-font);
     font-size: 0.875rem;
     cursor: pointer;
-    border: 1px solid #404040;
+    border: 1px solid var(--color-neutral-700);
     background: transparent;
-    color: #e5e5e5;
+    color: var(--color-neutral-200);
     padding: 0.375rem 0.75rem;
     transition: border-color 0.15s, background 0.15s;
 }
 
 .ascii-button:hover {
-    border-color: #4ade80;
-    background: rgba(74, 222, 128, 0.05);
+    border-color: var(--color-green-400);
+    background: color-mix(in srgb, var(--color-green-400) 5%, transparent);
 }
 
 .ascii-button:focus {
@@ -149,18 +398,18 @@ body {
 
 /* Green primary action button */
 .ascii-button-primary {
-    font-family: var(--font-mono), monospace;
+    font-family: var(--ui-font);
     font-size: 0.875rem;
     cursor: pointer;
-    border: 1px solid #4ade80;
+    border: 1px solid var(--color-green-400);
     background: transparent;
-    color: #4ade80;
+    color: var(--color-green-400);
     padding: 0.5rem 1rem;
     transition: background 0.15s;
 }
 
 .ascii-button-primary:hover {
-    background: rgba(74, 222, 128, 0.1);
+    background: color-mix(in srgb, var(--color-green-400) 10%, transparent);
 }
 
 .ascii-button-primary:disabled {
@@ -170,18 +419,18 @@ body {
 
 /* Danger button */
 .ascii-button-danger {
-    font-family: var(--font-mono), monospace;
+    font-family: var(--ui-font);
     font-size: 0.875rem;
     cursor: pointer;
-    border: 1px solid #dc2626;
+    border: 1px solid var(--color-red-600);
     background: transparent;
-    color: #f87171;
+    color: var(--color-red-400);
     padding: 0.375rem 0.75rem;
     transition: background 0.15s;
 }
 
 .ascii-button-danger:hover {
-    background: rgba(220, 38, 38, 0.1);
+    background: color-mix(in srgb, var(--color-red-600) 10%, transparent);
 }
 
 .ascii-button-danger:disabled {
@@ -193,10 +442,10 @@ body {
    ERROR PANEL
    ============================ */
 .ascii-error {
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid color-mix(in srgb, var(--color-red-500) 50%, transparent);
+    background: color-mix(in srgb, var(--color-red-500) 10%, transparent);
     padding: 0.75rem;
-    color: #f87171;
+    color: var(--color-red-400);
     font-size: 0.875rem;
 }
 
@@ -211,7 +460,7 @@ input[type="number"] {
     -moz-appearance: textfield;
 }
 
-/* Date input color fix for dark theme */
+/* Date input color fix for dark themes */
 input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
 }

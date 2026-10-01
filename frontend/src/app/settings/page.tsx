@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/auth-context";
 import { apiFetch, ApiError } from "@/lib/api";
 import { MEMBER_DOT } from "../components/MemberDot";
 import { getPushStatus, enablePush, disablePush, sendTestPush, type PushStatus } from "@/lib/push";
+import ThemeSwitcher from "../components/ThemeSwitcher";
+import { Card, CardTitle, Hint, PageHeader, Field, TextInput, Button, ToggleRow } from "../components/ui";
 
 const COLORS = ["green", "blue", "yellow", "pink", "purple", "orange", "cyan", "red"];
 
@@ -214,37 +216,36 @@ export default function SettingsPage() {
 
     if (isLoading || (!settings && !error)) return <p className="text-neutral-500 font-mono">loading...</p>;
 
-    const inputCls =
-        "w-full bg-transparent border border-neutral-700 px-3 py-2 text-white placeholder:text-neutral-600 focus:outline-none focus:border-green-400 text-sm";
-
     return (
-        <section className="space-y-6 font-mono">
-            <header className="flex items-baseline justify-between border-b border-neutral-700 pb-2">
-                <h1 className="text-green-400 text-lg font-bold tracking-wider">SETTINGS</h1>
-                <span className="text-neutral-500 text-sm">{user?.displayName}</span>
-            </header>
+        <section className="space-y-6">
+            <PageHeader title="Settings" right={user?.displayName} />
 
-            {error && <div className="text-red-400 text-sm border border-red-500/40 px-3 py-2">[ERROR] {error}</div>}
+            {error && <div className="ascii-error">{error}</div>}
             {flash && <div className="text-green-400 text-sm border border-green-500/30 px-3 py-2">{flash}</div>}
 
+            {/* APPEARANCE */}
+            <Card className="!space-y-3">
+                <CardTitle>Appearance</CardTitle>
+                <Hint>Theme applies instantly and is saved on this device.</Hint>
+                <ThemeSwitcher />
+            </Card>
+
             {/* PROFILE */}
-            <div className="border border-neutral-800 p-4 space-y-4">
-                <h2 className="text-sm text-neutral-300">{"> "}PROFILE</h2>
-                <div>
-                    <label className="block text-xs text-neutral-500 mb-1">DISPLAY NAME</label>
+            <Card>
+                <CardTitle>Profile</CardTitle>
+                <Field label="Display name">
                     <div className="flex gap-2">
-                        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={inputCls} />
-                        <button
+                        <TextInput value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                        <Button
+                            variant="primary"
                             onClick={saveProfile}
                             disabled={busy || !displayName.trim() || displayName.trim() === user?.displayName}
-                            className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 text-sm disabled:opacity-30 whitespace-nowrap"
                         >
-                            [ SAVE ]
-                        </button>
+                            SAVE
+                        </Button>
                     </div>
-                </div>
-                <div>
-                    <label className="block text-xs text-neutral-500 mb-1">YOUR COLOR</label>
+                </Field>
+                <Field label="Your color">
                     <div className="flex gap-2">
                         {COLORS.map((c) => (
                             <button
@@ -253,46 +254,40 @@ export default function SettingsPage() {
                                 onClick={() => saveColor(c)}
                                 aria-label={c}
                                 className={`w-6 h-6 rounded-full ${MEMBER_DOT[c]} cursor-pointer ${
-                                    (user?.color ?? "green") === c ? "ring-2 ring-white ring-offset-1 ring-offset-black" : "opacity-50 hover:opacity-100"
+                                    (user?.color ?? "green") === c ? "ring-2 ring-white ring-offset-1 ring-offset-neutral-950" : "opacity-50 hover:opacity-100"
                                 }`}
                             />
                         ))}
                     </div>
-                </div>
+                </Field>
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-neutral-500">{user?.email}</span>
                     {user?.emailConfirmed ? (
-                        <span className="text-green-400 text-xs border border-green-500/30 px-2 py-0.5">✓ verified</span>
+                        <span className="text-green-400 text-xs border border-green-500/30 px-2 py-0.5 rounded">✓ verified</span>
                     ) : (
                         <button onClick={resendVerification} disabled={busy} className="text-yellow-500 hover:text-yellow-400 text-xs underline disabled:opacity-40">
                             unverified — resend link
                         </button>
                     )}
                 </div>
-            </div>
+            </Card>
 
             {/* SECURITY */}
-            <div className="border border-neutral-800 p-4 space-y-3">
-                <h2 className="text-sm text-neutral-300">{"> "}SECURITY</h2>
-                <input type="password" placeholder="current password" value={curPw} onChange={(e) => setCurPw(e.target.value)} className={inputCls} />
-                <input type="password" placeholder="new password" value={newPw} onChange={(e) => setNewPw(e.target.value)} className={inputCls} />
-                <input type="password" placeholder="confirm new password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} className={inputCls} />
-                <button
-                    onClick={changePassword}
-                    disabled={busy || !curPw || !newPw}
-                    className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-30"
-                >
-                    [ CHANGE PASSWORD ]
-                </button>
-            </div>
+            <Card className="!space-y-3">
+                <CardTitle>Security</CardTitle>
+                <TextInput type="password" placeholder="current password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
+                <TextInput type="password" placeholder="new password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+                <TextInput type="password" placeholder="confirm new password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
+                <Button onClick={changePassword} disabled={busy || !curPw || !newPw}>
+                    CHANGE PASSWORD
+                </Button>
+            </Card>
 
             {/* NOTIFICATIONS */}
-            <div className="border border-neutral-800 p-4 space-y-4">
+            <Card>
                 <div>
-                    <h2 className="text-sm text-neutral-300">{"> "}PUSH NOTIFICATIONS</h2>
-                    <p className="text-neutral-500 text-xs mt-1">
-                        Real-time nudges on this device — your turn for a chore, someone settled up with you.
-                    </p>
+                    <CardTitle>Push notifications</CardTitle>
+                    <Hint>Real-time nudges on this device — your turn for a chore, someone settled up with you.</Hint>
                 </div>
 
                 {push && !push.supported && (
@@ -304,52 +299,42 @@ export default function SettingsPage() {
 
                 {push?.supported && push.serverEnabled && (
                     <>
-                        <button
+                        <ToggleRow
+                            label="Notify me on this device"
+                            on={push.subscribed}
+                            busy={pushBusy}
                             onClick={togglePush}
-                            disabled={pushBusy}
-                            className="flex items-center justify-between w-full border border-neutral-700 hover:border-neutral-500 px-3 py-2 text-sm disabled:opacity-40"
-                        >
-                            <span className="text-neutral-300">Notify me on this device</span>
-                            <span className={push.subscribed ? "text-green-400" : "text-neutral-500"}>
-                                {pushBusy ? "…" : push.subscribed ? "[ ON ]" : "[ OFF ]"}
-                            </span>
-                        </button>
+                        />
                         {push.subscribed && (
-                            <button onClick={testPush} disabled={pushBusy} className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-40">
-                                [ SEND ME A TEST ]
-                            </button>
+                            <Button onClick={testPush} disabled={pushBusy}>SEND ME A TEST</Button>
                         )}
                     </>
                 )}
-            </div>
+            </Card>
 
             {/* DIGEST */}
-            <div className="border border-neutral-800 p-4 space-y-4">
+            <Card>
                 <div>
-                    <h2 className="text-sm text-neutral-300">{"> "}DAILY DIGEST</h2>
-                    <p className="text-neutral-500 text-xs mt-1">
+                    <CardTitle>Daily digest</CardTitle>
+                    <Hint>
                         A once-a-day email rounding up what needs attention — chores, todos, the day&rsquo;s
                         calendar, the ledger, and the shopping list.
-                    </p>
+                    </Hint>
                 </div>
 
-                <button
+                <ToggleRow
+                    label="Email me the daily digest"
+                    on={!!settings?.digestOptIn}
                     onClick={() => saveDigest({ digestOptIn: !settings!.digestOptIn }, !settings!.digestOptIn ? "Daily digest on." : "Daily digest off.")}
-                    className="flex items-center justify-between w-full border border-neutral-700 hover:border-neutral-500 px-3 py-2 text-sm"
-                >
-                    <span className="text-neutral-300">Email me the daily digest</span>
-                    <span className={settings?.digestOptIn ? "text-green-400" : "text-neutral-500"}>
-                        {settings?.digestOptIn ? "[ ON ]" : "[ OFF ]"}
-                    </span>
-                </button>
+                />
 
                 {settings?.digestOptIn && (
-                    <label className="flex items-center justify-between w-full border border-neutral-800 px-3 py-2 text-sm">
+                    <label className="flex items-center justify-between w-full border border-neutral-800 rounded-lg px-3 py-2 text-sm">
                         <span className="text-neutral-400">Deliver at</span>
                         <select
                             value={settings.digestHour ?? ""}
                             onChange={(e) => saveDigest({ digestHour: e.target.value === "" ? null : Number(e.target.value) }, "Delivery time updated.")}
-                            className="bg-neutral-900 border border-neutral-700 text-neutral-200 px-2 py-1 focus:outline-none focus:border-green-400"
+                            className="bg-neutral-900 border border-neutral-700 text-neutral-200 px-2 py-1 focus:outline-none focus:border-green-400 rounded"
                         >
                             <option value="">household default ({hourLabel(settings.defaultHour)})</option>
                             {Array.from({ length: 24 }, (_, h) => (
@@ -360,24 +345,20 @@ export default function SettingsPage() {
                 )}
 
                 <div className="flex flex-wrap gap-3">
-                    <button onClick={() => preview()} disabled={busy} className="border border-green-400/60 text-green-400 hover:bg-green-400/10 px-3 py-1.5 text-sm disabled:opacity-40">
-                        [ PREVIEW ]
-                    </button>
-                    <button onClick={sendTest} disabled={busy} className="border border-neutral-600 text-neutral-300 hover:border-neutral-400 px-3 py-1.5 text-sm disabled:opacity-40">
-                        [ SEND ME A TEST ]
-                    </button>
+                    <Button variant="primary" onClick={() => preview()} disabled={busy}>PREVIEW</Button>
+                    <Button onClick={sendTest} disabled={busy}>SEND ME A TEST</Button>
                 </div>
 
                 {settings?.skins && settings.skins.length > 0 && (
                     <div className="border-t border-neutral-800 pt-3">
-                        <div className="text-neutral-500 text-xs mb-2">Preview a skin (opens in a new tab):</div>
+                        <div className="text-neutral-500 text-xs mb-2">Preview an email skin (opens in a new tab):</div>
                         <div className="flex flex-wrap gap-2">
                             {settings.skins.map((s) => (
                                 <button
                                     key={s}
                                     onClick={() => preview(s)}
                                     disabled={busy}
-                                    className={`px-2 py-1 border text-xs disabled:opacity-40 ${
+                                    className={`px-2 py-1 border text-xs disabled:opacity-40 rounded ${
                                         s === settings.activeSkin
                                             ? "border-green-400 text-green-400"
                                             : "border-neutral-700 text-neutral-400 hover:border-neutral-500"
@@ -391,7 +372,7 @@ export default function SettingsPage() {
                 )}
 
                 <div className="text-neutral-600 text-xs border-t border-neutral-800 pt-3 space-y-0.5">
-                    <div>active skin: <span className="text-neutral-400">{settings?.activeSkin}</span> <span className="text-neutral-700">· set via Digest:Skin (use &ldquo;auto&rdquo; for weekday + Sunday-Herald)</span></div>
+                    <div>active email skin: <span className="text-neutral-400">{settings?.activeSkin}</span> <span className="text-neutral-700">· set via Digest:Skin (use &ldquo;auto&rdquo; for weekday + Sunday-Herald)</span></div>
                     <div>
                         daily delivery:{" "}
                         <span className={settings?.schedulerEnabled ? "text-green-400" : "text-yellow-500"}>
@@ -399,7 +380,7 @@ export default function SettingsPage() {
                         </span>
                     </div>
                 </div>
-            </div>
+            </Card>
         </section>
     );
 }
