@@ -32,7 +32,11 @@ public class VapidKeyProvider
             return;
         }
 
-        var path = Path.Combine(env.ContentRootPath, "vapid-keys.json");
+        // Push:KeyFile lets Docker keep the keys on the data volume — regenerating
+        // them on every image rebuild would silently orphan every subscription.
+        var path = config["Push:KeyFile"] is { Length: > 0 } keyFile
+            ? keyFile
+            : Path.Combine(env.ContentRootPath, "vapid-keys.json");
         try
         {
             if (File.Exists(path))

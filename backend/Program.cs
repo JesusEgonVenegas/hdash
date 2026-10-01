@@ -109,16 +109,29 @@ builder.Services.AddHostedService<backend.Services.BackupService>();
 builder.Services.AddSingleton<backend.Services.Push.VapidKeyProvider>();
 builder.Services.AddScoped<backend.Services.Push.PushService>();
 
-// CORS — reads allowed origins from config (comma-separated)
+// CORS — reads allowed origins from config (comma-separated). In Development
+// any localhost port is also allowed, so the frontend can run on whatever port
+// happens to be free (3000, 3003, …) without editing config. Outside
+// Development this needs Cors:AllowAnyLocalhost to opt in explicitly.
 var allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:3000")
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+var allowAnyLocalhost = builder.Environment.IsDevelopment()
+    || builder.Configuration.GetValue<bool>("Cors:AllowAnyLocalhost");
+
+static bool IsLocalhost(string origin) =>
+    Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+    && (uri.Host is "localhost" or "127.0.0.1" or "[::1]" or "::1");
 
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         policy
-            .WithOrigins(allowedOrigins)
+            .SetIsOriginAllowed(origin =>
+                allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase)
+                || (allowAnyLocalhost && IsLocalhost(origin)))
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -132,11 +145,16 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
-    // The lived-in demo household is development-only.
-    if (app.Environment.IsDevelopment())
+    // The lived-in demo household seeds automatically in Development, or in any
+    // environment when Seed:Demo is set (e.g. DEMO_SEED=true for a Docker spin-up).
+    // The seeder is idempotent — it skips if the demo household already exists.
+    if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Seed:Demo"))
     {
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        await DemoSeeder.SeedAsync(db, userManager, app.Logger);
+        // Seed:Reset rebuilds the demo household against today's date — the seeded
+        // dates are all relative to seed time, so they go stale as the days pass.
+        var resetDemo = app.Configuration.GetValue<bool>("Seed:Reset");
+        await DemoSeeder.SeedAsync(db, userManager, app.Logger, resetDemo);
     }
 }
 

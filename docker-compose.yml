@@ -10,6 +10,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Jwt__Key: ${JWT_KEY:?set JWT_KEY in .env}
       ConnectionStrings__DefaultConnection: "Data Source=/data/app.db"
+      # Seed a lived-in demo household on first run (set DEMO_SEED=true in .env).
+      Seed__Demo: ${DEMO_SEED:-false}
       Cors__AllowedOrigins: ${FRONTEND_ORIGIN:-http://localhost:3000}
       # Daily email digest (off by default)
       Digest__Enabled: ${DIGEST_ENABLED:-false}
@@ -25,6 +27,8 @@ services:
       # Nightly SQLite backups to the volume
       Backup__Enabled: ${BACKUP_ENABLED:-true}
       Backup__Directory: /data/backups
+      # Web push keys — kept on the volume so subscriptions survive rebuilds.
+      Push__KeyFile: /data/vapid-keys.json
     volumes:
       - hdash-data:/data
     restart: unless-stopped
