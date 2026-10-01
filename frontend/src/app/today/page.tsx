@@ -65,7 +65,10 @@ export default function TodayPage() {
     if (error) return <p className="text-red-400 font-mono">{error}</p>;
     if (!today) return null;
 
+    // The server sends a calendar date as UTC midnight; format it in UTC or it
+    // slides back a day anywhere west of Greenwich.
     const dateLabel = new Date(today.date).toLocaleDateString(undefined, {
+        timeZone: "UTC",
         weekday: "long",
         month: "short",
         day: "numeric",

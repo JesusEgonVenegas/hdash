@@ -58,8 +58,11 @@ public static class CalendarEndpoints
         {
             if (e.Recurrence == "none")
             {
-                var overlaps = e.StartDate < monthEnd && (e.EndDate == null || e.EndDate >= monthStart)
-                    || (e.StartDate >= monthStart && e.StartDate < monthEnd);
+                // A one-off occupies [StartDate, EndDate ?? StartDate]. It belongs to
+                // this month only if that span actually intersects the month — a
+                // single-day event with no EndDate must not leak into later months.
+                var effectiveEnd = e.EndDate ?? e.StartDate;
+                var overlaps = e.StartDate < monthEnd && effectiveEnd >= monthStart;
                 if (overlaps) occurrences.Add((e.StartDate, Project(e, e.StartDate, e.EndDate)));
                 continue;
             }

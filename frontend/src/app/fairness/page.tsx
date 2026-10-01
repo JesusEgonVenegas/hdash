@@ -71,10 +71,10 @@ export default function FairnessPage() {
             <div className="border border-neutral-800 p-4">
                 <div className="flex items-baseline justify-between mb-3">
                     <h2 className="text-green-400 text-sm">{"> "}MONEY CARRIED</h2>
-                    <span className="text-neutral-500 text-xs">{money(totalSpend)} shared this month</span>
+                    <span className="text-neutral-500 text-xs">{money(totalSpend)} shared · last 30 days</span>
                 </div>
                 {totalSpend === 0 ? (
-                    <p className="text-neutral-500 text-sm">no shared expenses logged this month.</p>
+                    <p className="text-neutral-500 text-sm">no shared expenses logged in the last 30 days.</p>
                 ) : (
                     <div className="space-y-3">
                         {data?.members.map((m) => (
@@ -99,7 +99,7 @@ export default function FairnessPage() {
                             </div>
                         ))}
                         <p className="text-neutral-600 text-xs pt-1">
-                            green = carried more than a fair share this month · red = less. Settle the running balance on the{" "}
+                            green = carried more than a fair share lately · red = less. Settle the running balance on the{" "}
                             <Link href="/expenses" className="text-neutral-400 underline">expenses</Link> tab.
                         </p>
                     </div>
@@ -110,11 +110,11 @@ export default function FairnessPage() {
             <div className="border border-neutral-800 p-4">
                 <div className="flex items-baseline justify-between mb-3">
                     <h2 className="text-green-400 text-sm">{"> "}CHORE LOAD</h2>
-                    <span className="text-neutral-500 text-xs">{totalChores} done this month</span>
+                    <span className="text-neutral-500 text-xs">{totalChores} done · last 30 days</span>
                 </div>
                 {totalChores === 0 ? (
                     <p className="text-neutral-500 text-sm">
-                        no chores completed yet this month — this starts counting from now.
+                        no chores completed in the last 30 days — this starts counting from now.
                     </p>
                 ) : (
                     <div className="space-y-3">

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace backend.Endpoints;
 
 /// <summary>
-/// The Fairness Ledger: one read on "are we even?" this month, combining money
+/// The Fairness Ledger: one read on "are we even?" over the last 30 days, combining money
 /// (who carried more than their fair share of costs) with chore-load (who did
 /// more of the work). Money fairness respects the household's split mode.
 /// </summary>
@@ -35,15 +35,17 @@ public static class FairnessEndpoints
             : null;
         var proportional = household?.SplitMode == "proportional";
 
+        // A rolling 30-day window rather than the calendar month: a month boundary
+        // would wipe the ledger blank on the 1st, right when "are we even?" matters.
         var now = DateTime.UtcNow;
-        var monthStart = new DateTime(now.Year, now.Month, 1);
+        var windowStart = now.Date.AddDays(-30);
         var incomes = members.ToDictionary(m => m.Id, m => m.Income ?? 0m);
 
-        // --- MONEY: this month's shared expenses only (settlement transfers excluded). ---
+        // --- MONEY: the window's shared expenses only (settlement transfers excluded). ---
         var expensesQ = user.HouseholdId is not null
             ? db.Expenses.Where(e => e.HouseholdId == user.HouseholdId)
             : db.Expenses.Where(e => e.PaidByUserId == user.Id && e.HouseholdId == null);
-        var monthExpenses = (await expensesQ.Where(e => e.CreatedAt >= monthStart).ToListAsync())
+        var monthExpenses = (await expensesQ.Where(e => e.CreatedAt >= windowStart).ToListAsync())
             .Where(e => e.Participants().Contains(e.PaidByUserId))
             .ToList();
 
@@ -68,11 +70,11 @@ public static class FairnessEndpoints
         }
         var totalSpend = monthExpenses.Sum(e => e.Amount);
 
-        // --- CHORES: completions logged this month, credited to whoever did them. ---
+        // --- CHORES: completions logged in the window, credited to whoever did them. ---
         var complQ = user.HouseholdId is not null
             ? db.ChoreCompletions.Where(c => c.HouseholdId == user.HouseholdId)
             : db.ChoreCompletions.Where(c => c.UserId == user.Id && c.HouseholdId == null);
-        var monthCompletions = await complQ.Where(c => c.CompletedAt >= monthStart).ToListAsync();
+        var monthCompletions = await complQ.Where(c => c.CompletedAt >= windowStart).ToListAsync();
         var choreCounts = members.ToDictionary(m => m.Id, m => monthCompletions.Count(c => c.UserId == m.Id));
         var totalChores = monthCompletions.Count;
 
@@ -90,7 +92,7 @@ public static class FairnessEndpoints
 
         return Results.Ok(new
         {
-            period = monthStart.ToString("MMMM yyyy"),
+            period = $"{windowStart:MMM d} – {now:MMM d}",
             splitMode = proportional ? "proportional" : "equal",
             totals = new { spend = Math.Round(totalSpend, 2), choreCount = totalChores },
             members = rows,
@@ -98,22 +100,22 @@ public static class FairnessEndpoints
         });
     }
 
-    // A single plain-English read on who's carrying what this month.
+    // A single plain-English read on who's carrying what lately.
     private static string Verdict(List<(string name, decimal moneyNet, int chores)> rows, decimal spend, int chores)
     {
         if (rows.Count < 2) return "Just you here — nothing to balance.";
-        if (spend == 0 && chores == 0) return "Nothing logged yet this month.";
+        if (spend == 0 && chores == 0) return "Nothing logged in the last 30 days.";
 
         var moneyLeader = rows.OrderByDescending(r => r.moneyNet).First();
         var choreLeader = rows.OrderByDescending(r => r.chores).First();
         var moneyGap = spend > 0 && rows.Max(r => r.moneyNet) - rows.Min(r => r.moneyNet) > 0.01m;
         var choreGap = chores > 0 && rows.Max(r => r.chores) > rows.Min(r => r.chores);
 
-        if (!moneyGap && !choreGap) return "Pretty balanced this month. ✓";
-        if (moneyGap && !choreGap) return $"{moneyLeader.name} is carrying more of the costs this month.";
-        if (!moneyGap && choreGap) return $"{choreLeader.name} is doing more of the chores this month.";
+        if (!moneyGap && !choreGap) return "Pretty balanced lately. ✓";
+        if (moneyGap && !choreGap) return $"{moneyLeader.name} is carrying more of the costs lately.";
+        if (!moneyGap && choreGap) return $"{choreLeader.name} is doing more of the chores lately.";
         if (moneyLeader.name == choreLeader.name)
-            return $"{moneyLeader.name} is carrying the household this month — more costs AND more chores.";
+            return $"{moneyLeader.name} is carrying the household lately — more costs AND more chores.";
         return $"{moneyLeader.name} covers more of the costs; {choreLeader.name} does more of the chores — you're splitting the load.";
     }
 }

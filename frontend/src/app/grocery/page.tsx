@@ -94,6 +94,7 @@ export default function GroceryPage() {
             setItems((prev) => [created, ...prev]);
             setNewName("");
             setNewQuantity("");
+            setNewCategory("");
         } catch (err: any) {
             setError(err.data?.error ?? err.message ?? "Failed to add item");
         } finally {
@@ -102,6 +103,16 @@ export default function GroceryPage() {
     }
 
     async function addStaple(name: string, category: string) {
+        // Already on the list but checked off? Put that row back rather than
+        // adding a duplicate with the same name.
+        const existing = items.find(
+            (i) => i.isChecked && i.name.toLowerCase() === name.toLowerCase()
+        );
+        if (existing) {
+            await handleToggle(existing.id);
+            return;
+        }
+
         try {
             const created = await apiFetch<GroceryItem>("/api/grocery", {
                 method: "POST",

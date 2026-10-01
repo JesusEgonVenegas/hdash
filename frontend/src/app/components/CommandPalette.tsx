@@ -20,6 +20,9 @@ const PAGES: { label: string; href: string; keywords?: string }[] = [
     { label: "Debts", href: "/debts", keywords: "loans money" },
     { label: "Payments", href: "/payments", keywords: "money" },
     { label: "Expenses", href: "/expenses", keywords: "split settle money shared" },
+    { label: "Fairness", href: "/fairness", keywords: "even balance ledger chores money split" },
+    { label: "Payoff simulator", href: "/debts/simulate", keywords: "avalanche snowball debt free plan" },
+    { label: "Theme", href: "/settings", keywords: "appearance colors dark light gruvbox dracula bauhaus" },
     { label: "Household", href: "/household", keywords: "members invite" },
     { label: "Settings", href: "/settings", keywords: "account password digest profile" },
 ];
