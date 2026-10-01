@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import MemberDot from "./components/MemberDot";
+import LandingPage from "./components/LandingPage";
 import { apiFetch } from "@/lib/api";
 import type { ChoreItem } from "@/types/chore";
 import type { PaymentApi } from "@/types/payment";
@@ -112,6 +113,7 @@ export default function DashboardPage() {
         })();
     }, [token, isLoading]);
 
+    if (!isLoading && !token) return <LandingPage />;
     if (isLoading || (!data && !error)) return <p className="text-neutral-500 font-mono">loading...</p>;
     if (error) return <div className="ascii-error font-mono">[ERROR] {error}</div>;
     if (!data) return null;

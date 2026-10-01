@@ -1,0 +1,44 @@
+{
+  "name": "HDASH — Household Dashboard",
+  "short_name": "HDASH",
+  "description": "Terminal-style household management. Track groceries, todos, chores, calendar, and debts with your household.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Grocery List",
+      "url": "/grocery",
+      "description": "Open grocery list"
+    },
+    {
+      "name": "Todos",
+      "url": "/todos",
+      "description": "Open todo list"
+    },
+    {
+      "name": "Calendar",
+      "url": "/calendar",
+      "description": "Open calendar"
+    }
+  ]
+}

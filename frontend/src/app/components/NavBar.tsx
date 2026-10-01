@@ -59,6 +59,9 @@ export default function NavBar() {
 
     if (hideOn.includes(pathname)) return null;
     if (isLoading) return null;
+    // Logged-out visitors only reach public pages (the landing page has its own
+    // sign-in links); app links would all just bounce them to /login.
+    if (!user) return null;
 
     const badge = (href: string) =>
         href === "/today" && reminderCount > 0 ? (

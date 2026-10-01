@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0a0a0a"/>
+  <rect x="32" y="32" width="448" height="448" fill="none" stroke="#404040" stroke-width="8"/>
+  <text x="256" y="200" text-anchor="middle" fill="#4ade80" font-family="'Courier New', Courier, monospace" font-size="120" font-weight="bold">&gt;_</text>
+  <text x="256" y="340" text-anchor="middle" fill="#404040" font-family="'Courier New', Courier, monospace" font-size="52" letter-spacing="8">HDASH</text>
+</svg>

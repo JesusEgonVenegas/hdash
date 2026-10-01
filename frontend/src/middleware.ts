@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// "/" is public too: logged-out visitors get the landing page, members the dashboard.
 const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email"];
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    if (publicPaths.some((path) => pathname.startsWith(path))) {
+    if (pathname === "/" || publicPaths.some((path) => pathname.startsWith(path))) {
         return NextResponse.next();
     }
 
@@ -22,5 +23,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+    matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-touch-icon.svg|manifest.json|sw.js|offline.html|api).*)"],
 };

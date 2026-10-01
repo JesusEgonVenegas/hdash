@@ -130,6 +130,18 @@ without a flash of the wrong one.
 
 <p align="center"><img src="docs/screenshots/mobile.png" alt="Mobile views of Today and Chores" width="560"></p>
 
+### Install it, or go native
+
+The web app is an installable PWA: add it to your home screen, and it shows an offline
+page instead of a browser error when your server isn't reachable.
+
+There's also an experimental **Android app** in [`mobile/`](mobile/) (Vite + React +
+Capacitor). It's local-first: data stays on the device, no server needed.
+
+```bash
+cd mobile && npm install && npm run android   # builds, syncs, opens Android Studio
+```
+
 ### A morning email
 
 Once a day, each person can get the household's day by email. There are four
@@ -245,6 +257,7 @@ hdash/
 │   ├── app/          # one folder per page + shared components
 │   ├── lib/          # API client, auth, themes, push, debt math
 │   └── types/
+├── mobile/           # experimental local-first Android app (Capacitor)
 ├── docs/             # screenshots + demo video
 └── docker-compose.yml
 ```
@@ -255,7 +268,8 @@ hdash/
 - [x] Automated backups, Docker deploy
 - [x] Fairness Ledger, proportional splitting, chore streaks and undo
 - [x] Web push, daily digest with four skins, nine UI themes
-- [ ] Installable PWA (offline grocery list)
+- [x] Installable PWA with an offline fallback page
+- [ ] Offline grocery list (cache the list for the store aisle)
 - [ ] Insights ("grocery spend up 30% this month")
 - [ ] Calendar sync (ICS export/subscribe)
 
