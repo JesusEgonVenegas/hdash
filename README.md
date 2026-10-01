@@ -4,213 +4,259 @@
 
 **The household, on one screen.**
 
-A self-hostable dashboard for shared living — chores, groceries, todos, a calendar,
-and the money — with a terminal-flavored UI and a daily digest that lands in your inbox.
+A self-hosted dashboard for people who share a home: chores, groceries, todos,
+the calendar, the money, and a straight answer to *"are we even?"*
 
-`Next.js 16` · `React 19` · `ASP.NET Core 9` · `SQLite` · `JWT`
+`Next.js 16` · `React 19` · `ASP.NET Core 9` · `EF Core` · `SQLite` · `Docker`
+
+<img src="docs/demo.gif" alt="HDASH walkthrough: login, dashboard, chores, grocery, command palette, fairness, payoff simulator, themes" width="900">
+
+<sub>▶ <a href="docs/demo.mp4">Full-quality video (MP4, 1 min)</a></sub>
 
 </div>
 
 ---
 
-## What it is
+## Why
 
-HDASH is one place to run a household with the people you live with. Create a household,
-invite your housemates, and everything is shared: whose turn it is to take out the trash,
-what's on the shopping list, what's on the calendar this week, and where the money stands.
+Most household apps are a shared calendar and a shopping list. Living with someone
+involves two other running tallies: **who's paying for what**, and **who's doing the work**.
+Splitwise tracks the first. Nothing tracks the second. HDASH does both, in the same place
+as the rest of your day.
 
-It has a point of view. The interface is a **terminal** — monospace, keyboard-first, green-on-black —
-and the daily email digest is styled like a **transit departures board** (your day as scheduled
-departures; the overdue chore reads as `DELAYED`). Opinionated on purpose.
+It's built to run on a €4 VPS or a Raspberry Pi: one SQLite file, one `docker compose up`,
+and no third-party accounts.
 
-## Features
+## Try it in 60 seconds
 
-| | |
-|---|---|
-| **Today** | One screen of everything that needs you now — overdue chores, todos due, today's events, payments coming up, outstanding shopping. A live count badges the nav. |
-| **Daily digest** | A once-a-day email rounding up the household, with a swappable visual skin. Per-person opt-in. |
-| **Household** | Create or join a household by invite code; all data is scoped to it. |
-| **Chores** | Recurring chores with auto-rotation and assignment — "whose turn" solved. |
-| **Grocery** | Shared list with categories, quantities, and check-off. |
-| **Todos** | Tasks with due dates, priority, and assignment. |
-| **Calendar** | Monthly view with color-coded events. |
-| **Debts & payments** | Track debts and payment history, with **interest-aware balances** and a payoff simulator (avalanche / snowball). |
+```bash
+git clone https://github.com/JesusEgonVenegas/hdash.git && cd hdash
+cp .env.example .env
+sed -i "s/^JWT_KEY=.*/JWT_KEY=$(openssl rand -hex 32)/" .env
+echo "DEMO_SEED=true" >> .env
+docker compose up -d --build
+```
+
+Open **http://localhost:3000** and sign in as `admin@hdash.local` / `admin123`.
+You'll land in **The Nest**, a demo two-person household with a few weeks of chores,
+expenses, debts, meals and notes already in it.
+
+---
+
+## A tour
+
+### Today and the dashboard
+
+Everything that needs you, sorted by urgency: overdue chores, todos due today, today's
+events, debt payments coming up. The nav badge shows the count, so you can tell at a
+glance whether anything is waiting.
+
+<p align="center"><img src="docs/screenshots/dashboard.png" alt="Dashboard" width="860"></p>
+
+### Chores that rotate themselves
+
+Chores have a frequency and an owner. Tick one off and it passes to **the next person
+after whoever did it**, so covering someone's turn doesn't hand the chore straight back
+to you. On-time completions build a 🔥 streak. Tapped it by mistake? Undo restores the
+assignee, due date and streak exactly as they were.
+
+<p align="center"><img src="docs/screenshots/chores.png" alt="Chores with rotation, streaks and undo" width="860"></p>
+
+### The Fairness Ledger: are we even?
+
+One page combines both tallies. **Money carried** compares what each person paid with
+their fair share of shared expenses (split equally or by income). **Chore load** counts
+who actually did the work. You get a single verdict in plain English:
+
+> *Alex covers more of the costs; Sam does more of the chores, so you're splitting the load.*
+
+It covers a rolling 30 days, so it doesn't reset to empty on the 1st of the month.
+
+<p align="center"><img src="docs/screenshots/fairness.png" alt="Fairness ledger" width="860"></p>
+
+### Money
+
+- **Shared expenses** with categories, a monthly breakdown, recurring bills (rent, internet),
+  and settle-up that tells you who owes whom.
+- **Proportional splitting:** set each person's income and shared costs divide by earnings
+  instead of per head.
+- **Debts with real interest.** Balances accrue monthly interest on the server, so the number
+  you see is what you actually owe, not principal minus payments.
+- **Payoff simulator.** Enter a monthly budget and compare avalanche and snowball: debt-free
+  date, total interest, payoff order, and the balance month by month.
+
+<table>
+<tr>
+<td><img src="docs/screenshots/simulate.png" alt="Payoff simulator"></td>
+<td><img src="docs/screenshots/expenses.png" alt="Shared expenses"></td>
+</tr>
+</table>
+
+### The rest of the house
+
+<table>
+<tr>
+<td width="50%"><b>Grocery</b>: grouped by aisle, quick-add staples, check off as you shop.<br><img src="docs/screenshots/grocery.png" alt="Grocery list"></td>
+<td width="50%"><b>Meal plan</b>: plan the week, then push the ingredients to the shopping list.<br><img src="docs/screenshots/meals.png" alt="Meal plan"></td>
+</tr>
+<tr>
+<td><b>Calendar</b>: month view with recurring events.<br><img src="docs/screenshots/calendar.png" alt="Calendar"></td>
+<td><b>Pinboard</b>: shared notes, pinned ones surface on the dashboard and in the digest.<br><img src="docs/screenshots/notes.png" alt="Pinboard"></td>
+</tr>
+</table>
+
+Also: recurring **todos** with priorities and assignment, per-member **colors** for
+attribution, and **web push** notifications ("your turn 🧹", "you got paid 💸").
+
+### Keyboard-first
+
+<kbd>⌘</kbd>/<kbd>Ctrl</kbd> + <kbd>K</kbd> opens a command palette that jumps to any
+page or runs a quick action (add a grocery item, post a note).
+
+<p align="center"><img src="docs/screenshots/palette.png" alt="Command palette" width="860"></p>
+
+### Nine themes
+
+The default look is a green-on-black terminal. Settings has a live theme picker with
+**Gruvbox, Solarized, Dracula and Nord** (light and dark where they exist), plus two
+**Bauhaus** themes in Jost with solid color blocks. The theme applies instantly and loads
+without a flash of the wrong one.
+
+<p align="center"><img src="docs/screenshots/themes.png" alt="Gruvbox Light, Dracula, Solarized Dark and Nord themes" width="860"></p>
+
+### Works on your phone
+
+<p align="center"><img src="docs/screenshots/mobile.png" alt="Mobile views of Today and Chores" width="560"></p>
+
+### A morning email
+
+Once a day, each person can get the household's day by email. There are four
+interchangeable skins: **Departures** (a transit board where overdue items are `DELAYED`),
+**Terminal** (a CI build log, `BUILD FAILING — 3 task(s) overdue`), **Herald** (a newspaper
+broadsheet) and a plain baseline. `auto` sends Herald on Sundays and your weekday skin
+the rest of the week.
+
+<p align="center"><img src="docs/screenshots/digest-skins.png" alt="Departures, Herald and Terminal digest skins" width="900"></p>
+
+---
 
 ## Tech stack
 
 | Layer | Tech |
 |---|---|
-| Frontend | Next.js 16, React 19, Tailwind CSS 4, TypeScript |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, TypeScript |
 | Backend | ASP.NET Core 9 minimal APIs, Entity Framework Core |
-| Database | SQLite (zero-config; one file) |
-| Auth | ASP.NET Identity + JWT |
-| Email | Pluggable — dev file outbox or SMTP |
+| Database | SQLite: one file, automatic migrations, scheduled `VACUUM INTO` backups |
+| Auth | ASP.NET Identity + JWT, email verification, password reset, rate-limited login, server-side revocation |
+| Email | Pluggable `IEmailSender`: dev file outbox or any SMTP server |
+| Push | Web Push (VAPID). Keys are generated and saved on first run |
+| Deploy | `docker compose`: two containers and one data volume |
 
----
-
-## Quick start
+## Local development
 
 **Prerequisites:** [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) · [Node.js 20+](https://nodejs.org/)
 
-### 1. Backend
-
-Create `backend/appsettings.Development.json` (gitignored) with a signing key:
+**Backend.** Create `backend/appsettings.Development.json` (gitignored):
 
 ```json
-{
-  "Jwt": { "Key": "your-secret-key-at-least-32-characters-long!!" }
-}
+{ "Jwt": { "Key": "your-secret-key-at-least-32-characters-long!!" } }
 ```
-
-Then run — migrations apply automatically on startup:
 
 ```bash
 cd backend
-dotnet run
+dotnet run                       # → http://localhost:5063, migrations apply on start
+Seed__Reset=true dotnet run      # rebuild the demo household against today's date
 ```
 
-API is on **`http://localhost:5063`**.
+The demo household seeds automatically in Development. Its dates are relative to when it
+was seeded, so after a few weeks everything looks overdue. `Seed__Reset=true` rebuilds
+it and leaves other accounts untouched.
 
-### 2. Frontend
+**Frontend.**
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev                      # → http://localhost:3000 (any port works in dev)
 ```
 
-App is on **`http://localhost:3000`** (the backend's CORS expects this origin).
-
-### 3. Log in
-
-In development, a demo household **"The Nest"** is seeded automatically:
-
-```
-email:    admin@hdash.local     (or sam@hdash.local)
-password: admin123
-```
-
-Delete `backend/app.db` any time to rebuild the demo from scratch.
-
----
-
-## The daily digest
-
-A background job assembles each household's day and emails it once daily. The pipeline is
-cleanly separated so the **look is a swappable component**:
-
-```
-DigestService   → assembles the day (reuses the same rules as /api/today, interest-aware ledger)
-IDigestRenderer → the "skin" — DeparturesDigestRenderer (default) or BaselineDigestRenderer
-IEmailSender    → FileEmailSender (dev, writes .html, no credentials) or SmtpEmailSender
-DigestScheduler → sends once daily at a configured hour
-```
-
-Try it without any email setup — it writes rendered emails to `backend/outbox/`:
-
-- `GET  /api/digest/preview`   — render your household's digest as HTML
-- `POST /api/digest/send-test` — send it to yourself right now
-- `PUT  /api/digest/settings`  — opt in / out (`{ "digestOptIn": false }`)
-
-Or use the in-app **Settings** page (Preview / Send me a test / toggle).
-
-### Configuration (`appsettings.json`)
-
-```jsonc
-"Digest": {
-  "Enabled": false,        // turn the daily scheduler on
-  "Skin": "departures",    // "departures" | "baseline"
-  "Hour": 6,               // local hour to send
-  "SkipEmpty": true        // don't email a household with nothing to report
-},
-"Email": {
-  "Provider": "file",      // "file" (dev outbox) | "smtp"
-  "Smtp": { "Host": "", "Port": 587, "Username": "", "Password": "", "From": "", "FromName": "The Nest" }
-}
-```
-
-Any SMTP works — a Gmail app password, Fastmail, or a Resend/Postmark SMTP bridge.
-
----
-
-## Notable engineering
-
-- **Authoritative debt math.** Balances accrue monthly interest server-side in `DebtCalculator` (the single source of truth, unit-tested) rather than being recomputed per-client — so the balance you see reflects real, growing debt, not just principal minus payments.
-- **One place for household scoping.** `HouseholdScope` resolves "who can I see" once, instead of the rule being copy-pasted across every endpoint.
-- **Skin-swappable digest.** Everything downstream of the assembled `HouseholdDigest` is style-agnostic; a new look is one `IDigestRenderer` and one line of config.
-
-## Testing
+**Tests.**
 
 ```bash
-dotnet test        # backend.Tests — DebtCalculator money-math + rules
+dotnet test backend.Tests        # debt math, interest accrual, household rules
 ```
 
-## Deploy (Docker)
+In development, outgoing email (verification, password reset, digests) is written to
+`backend/outbox/` as `.html` files instead of being sent.
 
-The whole app runs from one `docker-compose.yml` — a .NET backend, a Next.js
-frontend, and a persisted SQLite volume. No managed database required, so it fits
-comfortably on a ~€4/mo VPS or a Raspberry Pi.
+## Self-hosting
 
 ```bash
-cp .env.example .env
-# edit .env — set JWT_KEY at minimum:  openssl rand -hex 32
+cp .env.example .env             # set JWT_KEY at minimum: openssl rand -hex 32
 docker compose up -d --build
 ```
 
-Frontend on `:3000`, backend on `:5063`. The database, nightly backups, and (in
-dev-file mode) sent digests all live on the `hdash-data` volume, so they survive
-restarts and image rebuilds. Migrations apply automatically on startup.
+The frontend runs on `:3000` and the backend on `:5063`. The database, backups and VAPID
+keys live on the `hdash-data` volume, so they survive rebuilds.
 
-**Key `.env` settings** (see `.env.example` for all):
-
-| Variable | Description |
+| Variable | What it does |
 |---|---|
-| `JWT_KEY` | **Required.** Signing secret, ≥32 chars (`openssl rand -hex 32`) |
-| `NEXT_PUBLIC_API_URL` | Browser-reachable backend URL (baked at build; rebuild if it changes) |
-| `FRONTEND_ORIGIN` | Frontend origin, for CORS + digest links |
-| `EMAIL_PROVIDER` / `SMTP_*` / `DIGEST_ENABLED` | Turn on real email + the daily digest |
-| `BACKUP_ENABLED` | Nightly SQLite snapshots to the volume (on by default) |
+| `JWT_KEY` | **Required.** Signing secret, ≥32 chars |
+| `NEXT_PUBLIC_API_URL` | Backend URL as seen by the browser. Baked in at build time, so rebuild if it changes |
+| `FRONTEND_ORIGIN` | Frontend origin, used for CORS and links in emails |
+| `DEMO_SEED` | Seed the demo household on first start |
+| `DIGEST_ENABLED` / `DIGEST_SKIN` | Daily email digest and its skin (`departures`, `terminal`, `herald`, `baseline`, `auto`) |
+| `EMAIL_PROVIDER` / `SMTP_*` | Real email. Any SMTP server works (Gmail app password, Fastmail, Resend, Postmark) |
+| `BACKUP_ENABLED` | Nightly SQLite snapshots with rotation |
 
-> **Remote hosts:** `NEXT_PUBLIC_API_URL` is compiled into the frontend at build
-> time, so set it to your host's backend URL and rebuild (`docker compose up -d --build`).
-> For a single public domain, put a reverse proxy (Caddy/nginx) in front and route
-> `/` to the frontend and the API to the backend.
+> **On a remote host:** put Caddy or nginx in front, route `/` to the frontend and the API
+> to the backend, and set `NEXT_PUBLIC_API_URL` to the public URL before building.
+> Push notifications need HTTPS (or `localhost`).
 
-Not using Docker? Each service also runs standalone (`dotnet publish -c Release`
-for the backend; `npm run build && npm start` for the frontend).
+## Engineering notes
+
+- **Debt math lives on the server.** `DebtCalculator` is the single, unit-tested source of
+  truth for balances with accrued interest. Clients never recompute it.
+- **One rule for household scoping.** `HouseholdScope` decides who can see what once,
+  instead of repeating that check in every endpoint.
+- **Chore history is an append-only log.** Each completion records who did it and a
+  snapshot of the chore's previous state. The Fairness Ledger is built from that log,
+  and undo restores from the snapshot.
+- **Skin-swappable digest.** `DigestService` assembles a skin-agnostic `HouseholdDigest`.
+  Each look is one `IDigestRenderer`: table layout with inline CSS, so it renders in
+  Gmail and Outlook.
+- **Themes are CSS variables.** Each theme overrides Tailwind 4's color variables under
+  `html[data-theme]`, so every component re-skins without per-component changes.
 
 ## Project structure
 
 ```
 hdash/
 ├── backend/
+│   ├── Endpoints/    # minimal API groups: auth, chores, fairness, digest, push, …
+│   ├── Services/     # DebtCalculator, HouseholdScope, Digest/, Email/, Push/, backups
+│   ├── Models/       # EF entities
 │   ├── Data/         # DbContext + demo seeder
-│   ├── Endpoints/    # minimal API groups (auth, debts, today, digest, …)
-│   ├── Services/     # DebtCalculator, HouseholdScope, Digest/, Email/
-│   ├── Models/       # entities
 │   └── Migrations/
-├── backend.Tests/    # xUnit money-math tests
-└── frontend/src/
-    ├── app/          # pages (today, settings, debts, …) + components
-    ├── lib/          # auth context, API client, debt math
-    └── types/
+├── backend.Tests/    # xUnit
+├── frontend/src/
+│   ├── app/          # one folder per page + shared components
+│   ├── lib/          # API client, auth, themes, push, debt math
+│   └── types/
+├── docs/             # screenshots + demo video
+└── docker-compose.yml
 ```
 
 ## Roadmap
 
-Built for a household you run yourself. Progress toward opening it to the public:
-
-- [x] Email verification + password reset (Identity tokens, generic replies, no account enumeration)
-- [x] Login rate-limiting / brute-force protection (per-IP, `Auth:RateLimit:PermitPerMinute`)
-- [x] Per-user digest send-hour (each person picks their own delivery time)
-- [x] Server-side token revocation (logout invalidates the JWT via a jti denylist)
-- [x] Automated SQLite backups (`VACUUM INTO` snapshots on an interval, with rotation)
-
-> Email verification is wired but **not enforced** by default — set `Auth:RequireConfirmedEmail=true` to require a confirmed address before sign-in.
-> Backups are **off** by default — set `Backup:Enabled=true` in production.
-
-> Status: `dev` is the active branch; feature work lands via PR.
+- [x] Email verification, password reset, login rate-limiting, token revocation
+- [x] Automated backups, Docker deploy
+- [x] Fairness Ledger, proportional splitting, chore streaks and undo
+- [x] Web push, daily digest with four skins, nine UI themes
+- [ ] Installable PWA (offline grocery list)
+- [ ] Insights ("grocery spend up 30% this month")
+- [ ] Calendar sync (ICS export/subscribe)
 
 ---
 
-<div align="center"><sub>Built with care for the people you live with.</sub></div>
+<div align="center"><sub>Built for the people you live with.</sub></div>
