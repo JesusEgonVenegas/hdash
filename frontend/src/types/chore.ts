@@ -11,6 +11,8 @@ export interface ChoreItem {
     isCompletedThisCycle: boolean;
     nextDueDate: string;
     lastCompletedAt: string | null;
+    lastCompletedByUserId?: string | null;
+    lastCompletedByName?: string | null;
     streak: number;
     createdAt: string;
     updatedAt: string;

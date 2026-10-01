@@ -22,4 +22,13 @@ public class ChoreCompletion
 
     public bool OnTime { get; set; }
     public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+
+    // Snapshot of the chore as it was just before this completion, so a mis-tap
+    // can be undone exactly rather than guessed at.
+    // Nullable throughout: rows logged before this existed (and the demo seed's
+    // backfilled history) carry no snapshot, and a null streak must not be
+    // confused with a genuine streak of 0.
+    public string? PreviousAssigneeUserId { get; set; }
+    public DateTime? PreviousDueDate { get; set; }
+    public int? PreviousStreak { get; set; }
 }

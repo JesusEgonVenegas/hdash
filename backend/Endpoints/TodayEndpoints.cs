@@ -31,7 +31,7 @@ public static class TodayEndpoints
         var today = DateTime.UtcNow.Date;
 
         var chores = snapshot.Chores
-            .Where(c => !c.IsCompletedThisCycle && c.NextDueDate.Date <= today)
+            .Where(c => !c.IsDoneForNow(today) && c.NextDueDate.Date <= today)
             .OrderBy(c => c.NextDueDate)
             .Select(c => new
             {
@@ -108,7 +108,7 @@ public static class TodayEndpoints
         var today = DateTime.UtcNow.Date;
         var reminders = new List<Reminder>();
 
-        foreach (var c in snapshot.Chores.Where(c => !c.IsCompletedThisCycle))
+        foreach (var c in snapshot.Chores.Where(c => !c.IsDoneForNow(today)))
         {
             var days = (c.NextDueDate.Date - today).Days;
             if (days > UpcomingWindowDays) continue;

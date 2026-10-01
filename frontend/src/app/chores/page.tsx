@@ -29,6 +29,8 @@ export default function ChoresPage() {
     const [showForm, setShowForm] = useState(false);
 
     const [editingId, setEditingId] = useState<string | null>(null);
+    // choreId -> confirmation of the completion you just made, this session only.
+    const [justDone, setJustDone] = useState<Record<string, string>>({});
 
     const loadItems = useCallback(async () => {
         if (!token) return;
@@ -100,8 +102,35 @@ export default function ChoresPage() {
             setItems((prev) =>
                 prev.map((item) => (item.id === id ? updated : item))
             );
+            // A rotating chore immediately becomes someone else's, so the row alone
+            // never shows that the click worked. Say so explicitly.
+            setJustDone((prev) => ({
+                ...prev,
+                [id]: updated.assignedToUserId === user?.id
+                    ? "done — back to you next time"
+                    : `done — ${updated.assignedToName ?? "someone else"}'s turn next`,
+            }));
         } catch (err: any) {
             setError(err.message ?? "Failed to complete chore");
+        }
+    }
+
+    async function handleUndo(id: string) {
+        try {
+            const updated = await apiFetch<ChoreItem>(`/api/chores/${id}/complete`, {
+                method: "DELETE",
+                token,
+            });
+            setItems((prev) =>
+                prev.map((item) => (item.id === id ? updated : item))
+            );
+            setJustDone((prev) => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
+        } catch (err: any) {
+            setError(err.data?.error ?? err.message ?? "Failed to undo");
         }
     }
 
@@ -156,7 +185,7 @@ export default function ChoresPage() {
                     <div>
                         <h1 className="text-lg text-green-400">{"> "}CHORES</h1>
                         <p className="text-neutral-500 text-xs mt-1">
-                            {dueItems.length} active · {completedItems.length} done this cycle
+                            {dueItems.length} active · {completedItems.length} done for now
                         </p>
                     </div>
                     <button
@@ -259,6 +288,8 @@ export default function ChoresPage() {
                             item={item}
                             members={members}
                             currentUserId={user?.id}
+                            justDone={justDone[item.id]}
+                            onUndo={handleUndo}
                             isEditing={editingId === item.id}
                             onEdit={() => setEditingId(editingId === item.id ? null : item.id)}
                             onCancelEdit={() => setEditingId(null)}
@@ -274,7 +305,7 @@ export default function ChoresPage() {
             {completedItems.length > 0 && (
                 <div className="border border-neutral-700 p-4 space-y-1">
                     <div className="text-neutral-500 text-xs mb-2">
-                        COMPLETED THIS CYCLE ({completedItems.length})
+                        DONE FOR NOW ({completedItems.length}) — back when each is next due
                     </div>
                     {completedItems.map((item) => (
                         <ChoreRow
@@ -282,6 +313,8 @@ export default function ChoresPage() {
                             item={item}
                             members={members}
                             currentUserId={user?.id}
+                            justDone={justDone[item.id]}
+                            onUndo={handleUndo}
                             isEditing={editingId === item.id}
                             onEdit={() => setEditingId(editingId === item.id ? null : item.id)}
                             onCancelEdit={() => setEditingId(null)}
@@ -297,7 +330,8 @@ export default function ChoresPage() {
             {members.length > 1 && (
                 <div className="border border-neutral-700 p-3">
                     <p className="text-neutral-500 text-xs">
-                        when a chore is completed, it automatically rotates to the next household member
+                        tick a chore off and it rotates to the next person after whoever did it —
+                        so covering someone else&apos;s turn passes it on, it doesn&apos;t hand it back to you
                     </p>
                 </div>
             )}
@@ -309,20 +343,24 @@ function ChoreRow({
     item,
     members,
     currentUserId,
+    justDone,
     isEditing,
     onEdit,
     onCancelEdit,
     onComplete,
+    onUndo,
     onUpdate,
     onDelete,
 }: {
     item: ChoreItem;
     members: HouseholdMember[];
     currentUserId?: string;
+    justDone?: string;
     isEditing: boolean;
     onEdit: () => void;
     onCancelEdit: () => void;
     onComplete: (id: string) => void;
+    onUndo: (id: string) => void;
     onUpdate: (id: string, patch: any) => void;
     onDelete: (id: string) => void;
 }) {
@@ -359,14 +397,17 @@ function ChoreRow({
         }
     }
 
-    const isOverdue =
-        !item.isCompletedThisCycle &&
-        new Date(item.nextDueDate) < new Date();
+    // Compare whole days: a chore due at midnight today is due today, not overdue.
+    const dueDay = new Date(item.nextDueDate);
+    dueDay.setHours(0, 0, 0, 0);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
     const isDueToday =
-        !item.isCompletedThisCycle &&
-        !isOverdue &&
-        new Date(item.nextDueDate).toDateString() === new Date().toDateString();
+        !item.isCompletedThisCycle && dueDay.getTime() === startOfToday.getTime();
+
+    const isOverdue =
+        !item.isCompletedThisCycle && dueDay.getTime() < startOfToday.getTime();
 
     const isMyTurn = item.assignedToUserId === currentUserId;
 
@@ -380,19 +421,29 @@ function ChoreRow({
             {/* MAIN ROW */}
             <div className="flex items-start justify-between py-2 group">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
+                    {/* Toggles both ways — ticking a chore off by mistake has to be
+                        reversible from the same box you tapped. */}
                     <button
-                        onClick={() => onComplete(item.id)}
-                        disabled={item.isCompletedThisCycle}
-                        className={`w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 cursor-pointer ${
+                        onClick={() =>
+                            item.isCompletedThisCycle ? onUndo(item.id) : onComplete(item.id)
+                        }
+                        className={`group/box w-5 h-5 border flex-shrink-0 flex items-center justify-center text-xs mt-0.5 cursor-pointer ${
                             item.isCompletedThisCycle
-                                ? "border-green-500 text-green-400"
-                                : isMyTurn
-                                ? "border-green-400 hover:bg-green-400/10"
-                                : "border-neutral-600 hover:border-green-400"
+                                ? "border-green-500 text-green-400 hover:border-yellow-400 hover:text-yellow-400"
+                                : "border-neutral-600 hover:border-green-400 hover:bg-green-400/10"
                         }`}
-                        title={item.isCompletedThisCycle ? "Done this cycle" : "Mark as done"}
+                        title={
+                            item.isCompletedThisCycle
+                                ? `Done until ${new Date(item.nextDueDate).toLocaleDateString()} — click to undo`
+                                : "Mark as done"
+                        }
                     >
-                        {item.isCompletedThisCycle ? "✓" : ""}
+                        {item.isCompletedThisCycle && (
+                            <>
+                                <span className="group-hover/box:hidden">✓</span>
+                                <span className="hidden group-hover/box:inline">×</span>
+                            </>
+                        )}
                     </button>
 
                     <div className="flex-1 min-w-0">
@@ -436,9 +487,14 @@ function ChoreRow({
                             </span>
 
                             {item.assignedToName && (
-                                <span className={`text-xs flex items-center gap-1 ${isMyTurn ? "text-green-400" : "text-neutral-400"}`}>
+                                <span className={`text-xs flex items-center gap-1 ${isMyTurn ? "text-yellow-400" : "text-neutral-400"}`}>
                                     <MemberDot color={item.assignedToColor} />
-                                    {isMyTurn ? "your turn" : item.assignedToName}
+                                    {item.assignedToName}
+                                    {isMyTurn && (
+                                        <span className="border border-yellow-400/60 px-1 leading-tight">
+                                            your turn
+                                        </span>
+                                    )}
                                 </span>
                             )}
 
@@ -450,10 +506,26 @@ function ChoreRow({
 
                             {item.lastCompletedAt && (
                                 <span className="text-xs text-neutral-600">
-                                    last: {new Date(item.lastCompletedAt).toLocaleDateString()}
+                                    last done{item.lastCompletedByName ? ` by ${item.lastCompletedByName}` : ""}
+                                    {" "}
+                                    {new Date(item.lastCompletedAt).toLocaleDateString()}
                                 </span>
                             )}
                         </div>
+
+                        {(justDone || item.isCompletedThisCycle) && (
+                            <p className="text-xs mt-0.5 flex items-center gap-2">
+                                <span className="text-green-400">
+                                    ✓ {justDone ?? `done — back ${new Date(item.nextDueDate).toLocaleDateString()}`}
+                                </span>
+                                <button
+                                    onClick={() => onUndo(item.id)}
+                                    className="text-neutral-500 hover:text-yellow-400 underline cursor-pointer"
+                                >
+                                    undo
+                                </button>
+                            </p>
+                        )}
 
                         {item.description && !isEditing && (
                             <p className="text-xs text-neutral-600 mt-0.5">

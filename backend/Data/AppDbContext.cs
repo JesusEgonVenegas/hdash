@@ -132,6 +132,15 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(c => c.AssignedToUserId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        // Without this the FK convention looks for "LastCompletedById" and quietly
+        // creates a shadow column, leaving LastCompletedByUserId as a dead scalar.
+        modelBuilder
+            .Entity<ChoreItem>()
+            .HasOne(c => c.LastCompletedBy)
+            .WithMany()
+            .HasForeignKey(c => c.LastCompletedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         modelBuilder
             .Entity<ChoreItem>()
             .HasOne(c => c.Household)

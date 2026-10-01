@@ -87,7 +87,7 @@ public class DigestService
 
         var items = new List<DigestItem>();
 
-        foreach (var c in choreList.Where(c => !c.IsCompletedThisCycle))
+        foreach (var c in choreList.Where(c => !c.IsDoneForNow(today)))
         {
             var days = (c.NextDueDate.Date - today).Days;
             if (days > WindowDays) continue;
